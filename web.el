@@ -260,14 +260,14 @@ described) are encoded just as \"key\"."
   ;; communicate to the filter function?
   (cond
     ((equal evt "closed\n")
-     (message "http client post closed"))
+     (message "web--http-post-sentinel http client post closed"))
     ((equal evt "deleted\n")
      (delete-process con)
-     (message "http client post closed"))
+     (message "web--http-post-sentinel http client post deleted"))
     ((equal evt "connection broken by peer\n")
-     (message "http client went away"))
+     (message "web--http-post-sentinel http client broken"))
     (t
-     (message "some message %s" evt))))
+     (message "web--http-post-sentinel unexpected evt: %s" evt))))
 
 (defun* web-http-call (method
                        callback

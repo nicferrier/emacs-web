@@ -258,7 +258,7 @@ This tests the parameter passing by having an elnode handler "
             :data init-data)
            ;; Hang till the client callback finishes
            (while (not the-end)
-             (sit-for 0.1)))
+             (sit-for 1)))
       ;; And when we're done with the server...
       (elnode-stop port))
     ;; Now test the data that was POSTed and collected inside the

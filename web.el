@@ -269,7 +269,8 @@ described) are encoded just as \"key\"."
     (t
      (message "some message %s" evt))))
 
-(defun* web-http-post (callback
+(defun* web-http-call (method
+                       callback
                        path
                        &key
                        (host "localhost")
@@ -277,7 +278,7 @@ described) are encoded just as \"key\"."
                        data
                        (mime-type 'application/form-www-url-encoded)
                        (mode 'batch))
-  "Make an HTTP POST to the HOST on PORT with PATH and send DATA.
+  "Make an HTTP method to the HOST on PORT with PATH and send DATA.
 
 PORT is 80 by default.
 
@@ -289,17 +290,21 @@ If DATA is a `hash-table' or the MIME-TYPE is
 `web--to-query-string' is used to to format the POST
 body.
 
-When the request comes back the CALLBACK is called.
+When the request comes back the CALLBACK is called.  CALLBACK is
+always passed 3 arguments: the HTTP connection which is a process
+object, the HTTP header which is a `hash-table' and `data', which
+is normally a string.  `data' depends somewhat on the context.
+See below.
 
 MODE defines what it means for the request to cause the CALLBACK
 to be fired.  When MODE is `stream' then the CALLBACK is called
 for every chunk of data received after the header has arrived.
 This allows streaming data to somewhere else; hence `stream'
-mode.
+mode.  In this mode CALLBACK's `data' argument is a single chunk
+of the stream or `:done' when the stream ends.
 
 The default MODE is `batch' which collects all the data from the
-response before calling CALLBACK with the header and all the
-data."
+response before calling CALLBACK with all the data as a string."
   (let* ((mode (or mode 'batch))
          (dest (format "%s:%s/%s" host port path))
          (buf (generate-new-buffer dest))
@@ -316,22 +321,69 @@ data."
              (cb callback))
          (web--http-post-filter con data cb mode))))
     ;; Send the request
-    (let* ((to-send
-            (cond
-              ((or (eq (if (symbolp mime-type)
-                           mime-type
-                           (intern mime-type))
-                       'application/form-www-url-encoded)
-                   (hash-table-p data))
-               (web--to-query-string data))))
-           (submission (format "POST %s HTTP/1.1\r
-Host: %s\r
-Content-type: %s\r
-Content-length:%d\r
-\r
-%s" path host mime-type (length to-send) to-send)))
+    (let*
+        ((to-send
+          (cond
+            ((or (eq (if (symbolp mime-type)
+                         mime-type
+                         (intern mime-type))
+                     'application/form-www-url-encoded)
+                 (hash-table-p data))
+             (web--to-query-string data))))
+         (headers
+          (or
+           (loop for hdr in
+                (list
+                 (when (member method '("POST" "PUT"))
+                   (format "Content-type: %s\r\n" mime-type))
+                 (when to-send
+                   (format
+                    "Content-length:%d\r\n" (length to-send))))
+              if hdr
+              concat hdr)
+           ""))
+         (submission
+          (format
+           "%s %s HTTP/1.1\r\nHost: %s\r\n%s\r\n%s"
+           method path host
+           headers
+           (if to-send to-send ""))))
       (process-send-string con submission))
     con))
+
+(defun web-http-get (callback
+                     path
+                     &key
+                       (host "localhost")
+                       (port 80)
+                       (mode 'batch))
+  "Make a GET."
+  (web-http-call
+   "GET"
+   callback
+   path
+   :host host
+   :port port
+   :mode mode))
+
+(defun* web-http-post (callback
+                       path
+                       &key
+                       (host "localhost")
+                       (port 80)
+                       data
+                       (mime-type 'application/form-www-url-encoded)
+                       (mode 'batch))
+  "Make a POST."
+  (web-http-call
+   "POST"
+   callback
+   path
+   :host host
+   :port port
+   :data data
+   :mime-type mime-type
+   :mode mode))
 
 (provide 'web)
 

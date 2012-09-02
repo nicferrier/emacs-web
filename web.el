@@ -346,12 +346,12 @@ response before calling CALLBACK with all the data as a string."
       (process-send-string con submission))
     con))
 
-(defun web-http-get (callback
-                     path
-                     &key
-                       (host "localhost")
-                       (port 80)
-                       (mode 'batch))
+(defun* web-http-get (callback
+                      path
+                      &key
+                      (host "localhost")
+                      (port 80)
+                      (mode 'batch))
   "Make a GET."
   (web-http-call
    "GET"

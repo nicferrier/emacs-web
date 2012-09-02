@@ -27,6 +27,17 @@
 (require 'web)
 (require 'elnode)
 
+(ert-deftest web--to-query-string ()
+  "Test query string making."
+  (let ((t1 #s(hash-table size 5 data (a 1 b 2 c 3 d "str" e t))))
+    (should
+     (equal "a=1&b=2&c=3&d=str&e"
+            (web--to-query-string t1))))
+  (let ((t2 '((a . 1)("b" . 2)(c . 3)(d . "str")(e . t))))
+    (should
+     (equal "a=1&b=2&c=3&d=str&e"
+            (web--to-query-string t2)))))
+
 (ert-deftest web-header-parse ()
   "Test HTTP header parsing."
   (let ((hdrs (web-header-parse

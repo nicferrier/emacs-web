@@ -222,7 +222,7 @@ by collecting it and then batching it to the CALLBACK."
      (format "%s" (url-hexify-string (format "%s" key))))))
 
 (defun web--to-query-string (object)
-  "Convert OBJECT to an HTTP query string.
+  "Convert OBJECT (a hash-table or alist) to an HTTP query string.
 
 If OBJECT is of type `hash-table' then the keys and values of the
 hash are iterated into the string depending on their types.
@@ -231,28 +231,23 @@ Keys with `number' and `string' values are encoded as
 \"key=value\" in the resulting query.
 
 Keys with a boolean value (or any other value not already
-described) are encoded just as \"key\"."
-  (cond
-    ((hash-table-p object)
-     (mapconcat
-      'identity
+described) are encoded just as \"key\".
+
+Keys may be symbols or strings."
+  (mapconcat
+   (lambda (pair)
+     (web--key-value-encode (car pair) (cdr pair)))
+   (cond
+     ((hash-table-p object)
       (let (result)
         (maphash
          (lambda (key value)
-           (setq result
-                 (cons
-                  (web--key-value-encode key value)
-                  result)))
+           (setq result (append (list (cons key value)) result)))
          object)
-        (reverse result))
-      "&"))))
-
-(ert-deftest web--to-query-string ()
-  "Test query string making."
-  (let ((t1 #s(hash-table size 5 data (a 1 b 2 c 3 d "str" e t))))
-    (should
-     (equal "a=1&b=2&c=3&d=str&e"
-            (web--to-query-string t1)))))
+        (reverse result)))
+     ((listp object)
+      object))
+   "&"))
 
 (defun web--http-post-sentinel (con evt)
   "Sentinel for the HTTP POST."

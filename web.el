@@ -41,7 +41,6 @@
 
 (eval-when-compile
   (require 'cl))
-(require 'kv)
 
 (defun web-header-parse (data)
   "Parse an HTTP response header.

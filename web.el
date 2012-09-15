@@ -41,6 +41,7 @@
 
 (eval-when-compile
   (require 'cl))
+(require 'kv)
 
 (defun web-header-parse (data)
   "Parse an HTTP response header.
@@ -284,9 +285,8 @@ PORT is 80 by default.
 DATA is of MIME-TYPE.  We try to interpret DATA and MIME-TYPE
 usefully:
 
-If DATA is a `hash-table' or the MIME-TYPE is
-`application/form-www-url-encoded' then
-`web--to-query-string' is used to to format the POST
+If MIME-TYPE is `application/form-www-url-encoded' then
+`web--to-query-string' is used to to format the DATA into a POST
 body.
 
 When the request comes back the CALLBACK is called.  CALLBACK is
@@ -323,11 +323,10 @@ response before calling CALLBACK with all the data as a string."
     (let*
         ((to-send
           (cond
-            ((or (eq (if (symbolp mime-type)
-                         mime-type
-                         (intern mime-type))
-                     'application/form-www-url-encoded)
-                 (hash-table-p data))
+            ((eq (if (symbolp mime-type)
+                     mime-type
+                     (intern mime-type))
+                 'application/form-www-url-encoded)
              (web--to-query-string data))))
          (headers
           (or

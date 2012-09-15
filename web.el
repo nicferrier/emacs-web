@@ -5,7 +5,6 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 3 Aug 2012
-
 ;; Keywords: lisp, http, hypermedia
 
 ;; This file is NOT part of GNU Emacs.
@@ -247,20 +246,27 @@ Keys may be symbols or strings."
       object))
    "&"))
 
+(defvar web-log-info t
+  "Whether to log info messages, specificalyl from the sentinel.")
+
 (defun web--http-post-sentinel (con evt)
   "Sentinel for the HTTP POST."
   ;; FIXME I'm sure this needs to be different - but how? it needs to
   ;; communicate to the filter function?
   (cond
     ((equal evt "closed\n")
-     (message "web--http-post-sentinel http client post closed"))
+     (when web-log-info
+       (message "web--http-post-sentinel http client post closed")))
     ((equal evt "deleted\n")
      (delete-process con)
-     (message "web--http-post-sentinel http client post deleted"))
+     (when web-log-info
+       (message "web--http-post-sentinel http client post deleted")))
     ((equal evt "connection broken by peer\n")
-     (message "web--http-post-sentinel http client broken"))
+     (when web-log-info
+         (message "web--http-post-sentinel http client broken")))
     (t
-     (message "web--http-post-sentinel unexpected evt: %s" evt))))
+     (when web-log-info
+       (message "web--http-post-sentinel unexpected evt: %s" evt)))))
 
 (defun* web-http-call (method
                        callback
@@ -350,7 +356,12 @@ response before calling CALLBACK with all the data as a string."
                       (host "localhost")
                       (port 80)
                       (mode 'batch))
-  "Make a GET."
+  "Make a GET calling CALLBACK with the result.
+
+For information on PATH, HOST, PORT and MODE see `web-http-call'.
+
+The callback probably won't work unless you set `lexical-binding'
+to `t'."
   (web-http-call
    "GET"
    callback
@@ -367,7 +378,12 @@ response before calling CALLBACK with all the data as a string."
                        data
                        (mime-type 'application/form-www-url-encoded)
                        (mode 'batch))
-  "Make a POST."
+  "Make a POST and call CALLBACK with the result.
+
+For information on PATH, HOST, PORT and MODE see `web-http-call'.
+
+The callback probably won't work unless you set `lexical-binding'
+to `t'."
   (web-http-call
    "POST"
    callback

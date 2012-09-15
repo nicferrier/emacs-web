@@ -26,6 +26,7 @@
 
 (require 'web)
 (require 'elnode)
+(require 'fakir)
 
 (ert-deftest web--to-query-string ()
   "Test query string making."

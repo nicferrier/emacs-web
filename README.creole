@@ -3,3 +3,24 @@ A useful HTTP client.
 Emacs has quite a few HTTP clients but they are all rather old. This
 is my attempt at a modern one.
 
+The idea is to always use callbacks to collect the response.
+
+Here's an example:
+
+{{{
+(setq lexical-binding t)
+
+(require 'web)
+
+(let ((query-data (make-hash-table :test 'equal)))
+  (puthash 'name "nic")
+  (puthash 'email "nic@example.com")
+  (web-http-post
+    (lambda (con header data)
+      (message "data received is: %s" data))
+     "/someplace"
+     :data query-data
+     :host "localhost"
+     :mime-type 'application/x-www-form-urlencoded
+     :port 8001))
+}}}

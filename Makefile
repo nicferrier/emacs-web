@@ -2,7 +2,7 @@
 
 # These are the variables that are specific to the package
 NAME=web
-VERSION=0.1.4
+VERSION=0.1.5
 DOC="A useful HTTP client."
 
 # Everything beyond here should be generic
@@ -45,8 +45,5 @@ $(PACKAGE): $(package_parts)
 
 $(PACKAGE)/$(NAME)-pkg.el:
 	echo "(define-package \"$(NAME)\" \"$(VERSION)\" \"$(DOC)\" `cat $(REQUIREMENTS)`)" > $@
-
-README:
-	cat README.creole > README
 
 # End

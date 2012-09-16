@@ -263,7 +263,7 @@ Keys may be symbols or strings."
        (message "web--http-post-sentinel http client post deleted")))
     ((equal evt "connection broken by peer\n")
      (when web-log-info
-         (message "web--http-post-sentinel http client broken")))
+       (message "web--http-post-sentinel http client broken")))
     (t
      (when web-log-info
        (message "web--http-post-sentinel unexpected evt: %s" evt)))))
@@ -311,6 +311,8 @@ response before calling CALLBACK with all the data as a string."
                buf
                host
                port)))
+    ;; We must use this coding system or the web dies
+    (set-process-coding-system con 'raw-text-unix 'raw-text-unix)
     (set-process-sentinel con 'web--http-post-sentinel)
     (set-process-filter
      con

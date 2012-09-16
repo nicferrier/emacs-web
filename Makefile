@@ -2,7 +2,7 @@
 
 # These are the variables that are specific to the package
 NAME=web
-VERSION=0.1.6
+VERSION=0.1.7
 DOC="A useful HTTP client."
 
 # Everything beyond here should be generic

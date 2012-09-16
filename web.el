@@ -202,7 +202,7 @@ by collecting it and then batching it to the CALLBACK."
                     con :web-buffer
                     (concat so-far data))
                    ;; We have all the data, callback and then kill the process
-                   (funcall callback con header so-far)
+                   (funcall callback con header (concat so-far data))
                    (delete-process con)))))))))
 
 (defun web--key-value-encode (key value)

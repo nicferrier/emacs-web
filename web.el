@@ -268,18 +268,40 @@ Keys may be symbols or strings."
      (when web-log-info
        (message "web--http-post-sentinel unexpected evt: %s" evt)))))
 
+(defun web--header-list (headers)
+  "Convert HEADERS (hash-table or alist) into a header list."
+  (labels
+      ((hdr (key val)
+         (format "%s: %s" key val)))
+    (cond
+      ((hash-table-p headers)
+       (let (res)
+         (maphash
+          (lambda (key val)
+            (setq res (append (list (hdr key val)) res)))
+          headers)
+         res))
+      ((listp headers)
+       (mapcar
+        (lambda (pair) (hdr (car pair)(cdr pair)))
+        headers)))))
+
 (defun* web-http-call (method
                        callback
                        path
                        &key
                        (host "localhost")
                        (port 80)
+                       extra-headers
                        data
                        (mime-type 'application/form-www-url-encoded)
                        (mode 'batch))
   "Make an HTTP method to the HOST on PORT with PATH and send DATA.
 
 PORT is 80 by default.
+
+EXTRA-HEADERS is an alist or a hash-table of extra headers to
+send to the server.
 
 DATA is of MIME-TYPE.  We try to interpret DATA and MIME-TYPE
 usefully:
@@ -332,12 +354,14 @@ response before calling CALLBACK with all the data as a string."
          (headers
           (or
            (loop for hdr in
-                (list
-                 (when (member method '("POST" "PUT"))
-                   (format "Content-type: %s\r\n" mime-type))
-                 (when to-send
-                   (format
-                    "Content-length:%d\r\n" (length to-send))))
+                (append
+                 (list
+                  (when (member method '("POST" "PUT"))
+                    (format "Content-type: %s\r\n" mime-type))
+                  (when to-send
+                    (format
+                     "Content-length:%d\r\n" (length to-send))))
+                 (web--header-list extra-headers))
               if hdr
               concat hdr)
            ""))
@@ -355,10 +379,12 @@ response before calling CALLBACK with all the data as a string."
                       &key
                       (host "localhost")
                       (port 80)
+                      extra-headers
                       (mode 'batch))
   "Make a GET calling CALLBACK with the result.
 
-For information on PATH, HOST, PORT and MODE see `web-http-call'.
+For information on PATH, HOST, PORT, EXTRA-HEADERS and MODE see
+`web-http-call'.
 
 The callback probably won't work unless you set `lexical-binding'
 to `t'."
@@ -368,6 +394,7 @@ to `t'."
    path
    :host host
    :port port
+   :extra-headers extra-headers
    :mode mode))
 
 (defun* web-http-post (callback
@@ -375,6 +402,7 @@ to `t'."
                        &key
                        (host "localhost")
                        (port 80)
+                       extra-headers
                        data
                        (mime-type 'application/form-www-url-encoded)
                        (mode 'batch))
@@ -390,6 +418,7 @@ to `t'."
    path
    :host host
    :port port
+   :extra-headers extra-headers
    :data data
    :mime-type mime-type
    :mode mode))

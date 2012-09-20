@@ -246,8 +246,8 @@ Keys may be symbols or strings."
       object))
    "&"))
 
-(defvar web-log-info t
-  "Whether to log info messages, specificalyl from the sentinel.")
+(defvar web-log-info nil
+  "Whether to log info messages, specifically from the sentinel.")
 
 (defun web--http-post-sentinel (con evt)
   "Sentinel for the HTTP POST."
@@ -267,6 +267,11 @@ Keys may be symbols or strings."
     (t
      (when web-log-info
        (message "web--http-post-sentinel unexpected evt: %s" evt)))))
+
+(defun web--http-post-sentinel-with-logging (con evt logging)
+  "Map a logging variable into the sentinel."
+  (let ((web-log-info logging))
+    (web-http-post-sentinel con evt)))
 
 (defun web--header-list (headers)
   "Convert HEADERS (hash-table or alist) into a header list."
@@ -295,7 +300,8 @@ Keys may be symbols or strings."
                        extra-headers
                        data
                        (mime-type 'application/form-www-url-encoded)
-                       (mode 'batch))
+                       (mode 'batch)
+                       logging)
   "Make an HTTP method to the HOST on PORT with PATH and send DATA.
 
 PORT is 80 by default.
@@ -335,7 +341,10 @@ response before calling CALLBACK with all the data as a string."
                port)))
     ;; We must use this coding system or the web dies
     (set-process-coding-system con 'raw-text-unix 'raw-text-unix)
-    (set-process-sentinel con 'web--http-post-sentinel)
+    (set-process-sentinel
+     con
+     (lambda (con evt)
+       (web--http-post-sentinel-with-logging con evt logging)))
     (set-process-filter
      con
      (lambda (con data)
@@ -380,7 +389,8 @@ response before calling CALLBACK with all the data as a string."
                       (host "localhost")
                       (port 80)
                       extra-headers
-                      (mode 'batch))
+                      (mode 'batch)
+                      (logging t))
   "Make a GET calling CALLBACK with the result.
 
 For information on PATH, HOST, PORT, EXTRA-HEADERS and MODE see
@@ -395,7 +405,8 @@ to `t'."
    :host host
    :port port
    :extra-headers extra-headers
-   :mode mode))
+   :mode mode
+   :logging t))
 
 (defun* web-http-post (callback
                        path
@@ -405,7 +416,8 @@ to `t'."
                        extra-headers
                        data
                        (mime-type 'application/form-www-url-encoded)
-                       (mode 'batch))
+                       (mode 'batch)
+                       (logging t))
   "Make a POST and call CALLBACK with the result.
 
 For information on PATH, HOST, PORT and MODE see `web-http-call'.
@@ -421,6 +433,7 @@ to `t'."
    :extra-headers extra-headers
    :data data
    :mime-type mime-type
+   :logging logging
    :mode mode))
 
 (provide 'web)

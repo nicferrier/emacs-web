@@ -271,7 +271,7 @@ Keys may be symbols or strings."
 (defun web--http-post-sentinel-with-logging (con evt logging)
   "Map a logging variable into the sentinel."
   (let ((web-log-info logging))
-    (web-http-post-sentinel con evt)))
+    (web--http-post-sentinel con evt)))
 
 (defun web--header-list (headers)
   "Convert HEADERS (hash-table or alist) into a header list."
@@ -358,7 +358,7 @@ response before calling CALLBACK with all the data as a string."
             ((eq (if (symbolp mime-type)
                      mime-type
                      (intern mime-type))
-                 'application/form-www-url-encoded)
+                 'application/x-www-form-urlencoded)
              (web--to-query-string data))))
          (headers
           (or
@@ -415,7 +415,7 @@ to `t'."
                        (port 80)
                        extra-headers
                        data
-                       (mime-type 'application/form-www-url-encoded)
+                       (mime-type 'application/x-www-form-urlencoded)
                        (mode 'batch)
                        (logging t))
   "Make a POST and call CALLBACK with the result.

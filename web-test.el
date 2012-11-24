@@ -285,6 +285,4 @@ This tests the parameter passing by having an elnode handler "
     ;; And a quick check of the clients receipt of the data from the handler
     (should (equal "hello world!" data-received))))
 
-(provide 'web)
-
-;;; web.el ends here
+;;; web-test.el ends here

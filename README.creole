@@ -13,8 +13,8 @@ Here's an example:
 (require 'web)
 
 (let ((query-data (make-hash-table :test 'equal)))
-  (puthash 'name "nic")
-  (puthash 'email "nic@example.com")
+  (puthash 'name "nic" query-data)
+  (puthash 'email "nic@example.com" query-data)
   (web-http-post
     (lambda (con header data)
       (message "data received is: %s" data))

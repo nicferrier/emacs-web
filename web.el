@@ -32,7 +32,7 @@
 ;;
 ;; This codes uses the Emacs style of:
 ;;
-;;    web--private-function
+;;    web/private-function
 ;;
 ;; for private functions.
 
@@ -41,6 +41,8 @@
 
 (eval-when-compile
   (require 'cl))
+
+(require 'url-parse)
 
 (defun web-header-parse (data)
   "Parse an HTTP response header.
@@ -78,7 +80,7 @@ which are stored as symbols the same as the normal header keys."
            (puthash name value header-hash)))
     header-hash))
 
-(defun web--chunked-decode-stream (con data consumer)
+(defun web/chunked-decode-stream (con data consumer)
   "Decode the chunked encoding stream on the process CON.
 
 DATA is a lump of data from the stream, as passed from a filter
@@ -131,10 +133,10 @@ CON is used to store state with the process property
                  (process-put con :chunked-encoding-buffer "")
                  ;; Go round again if we need to
                  (if left
-                     (web--chunked-decode-stream
+                     (web/chunked-decode-stream
                       con left consumer)))))))))
 
-(defun web--http-post-filter (con data callback mode)
+(defun web/http-post-filter (con data callback mode)
   "Filter function for HTTP POST.
 
 Not actually a filter function because it also receives the
@@ -169,12 +171,12 @@ by collecting it and then batching it to the CALLBACK."
                   (process-put con :http-header hdr)
                   ;; If we have more data call ourselves to process it
                   (when part-data
-                    (web--http-post-filter
+                    (web/http-post-filter
                      con part-data callback mode)))))
           ;; We have the header, read the body and call callback
           (cond
             ((equal "chunked" (gethash 'transfer-encoding header))
-             (web--chunked-decode-stream
+             (web/chunked-decode-stream
               con data
               ;; FIXME we still need the callback to know if this is completion
               (lambda (con data)
@@ -205,7 +207,7 @@ by collecting it and then batching it to the CALLBACK."
                    (funcall callback con header (concat so-far data))
                    (delete-process con)))))))))
 
-(defun web--key-value-encode (key value)
+(defun web/key-value-encode (key value)
   "Encode a KEY and VALUE for url encoding."
   (cond
     ((or
@@ -218,7 +220,7 @@ by collecting it and then batching it to the CALLBACK."
     (t
      (format "%s" (url-hexify-string (format "%s" key))))))
 
-(defun web--to-query-string (object)
+(defun web/to-query-string (object)
   "Convert OBJECT (a hash-table or alist) to an HTTP query string.
 
 If OBJECT is of type `hash-table' then the keys and values of the
@@ -233,7 +235,7 @@ described) are encoded just as \"key\".
 Keys may be symbols or strings."
   (mapconcat
    (lambda (pair)
-     (web--key-value-encode (car pair) (cdr pair)))
+     (web/key-value-encode (car pair) (cdr pair)))
    (cond
      ((hash-table-p object)
       (let (result)
@@ -249,31 +251,31 @@ Keys may be symbols or strings."
 (defvar web-log-info nil
   "Whether to log info messages, specifically from the sentinel.")
 
-(defun web--http-post-sentinel (con evt)
+(defun web/http-post-sentinel (con evt)
   "Sentinel for the HTTP POST."
   ;; FIXME I'm sure this needs to be different - but how? it needs to
   ;; communicate to the filter function?
   (cond
     ((equal evt "closed\n")
      (when web-log-info
-       (message "web--http-post-sentinel http client post closed")))
+       (message "web/http-post-sentinel http client post closed")))
     ((equal evt "deleted\n")
      (delete-process con)
      (when web-log-info
-       (message "web--http-post-sentinel http client post deleted")))
+       (message "web/http-post-sentinel http client post deleted")))
     ((equal evt "connection broken by peer\n")
      (when web-log-info
-       (message "web--http-post-sentinel http client broken")))
+       (message "web/http-post-sentinel http client broken")))
     (t
      (when web-log-info
-       (message "web--http-post-sentinel unexpected evt: %s" evt)))))
+       (message "web/http-post-sentinel unexpected evt: %s" evt)))))
 
-(defun web--http-post-sentinel-with-logging (con evt logging)
+(defun web/http-post-sentinel-with-logging (con evt logging)
   "Map a logging variable into the sentinel."
   (let ((web-log-info logging))
-    (web--http-post-sentinel con evt)))
+    (web/http-post-sentinel con evt)))
 
-(defun web--header-list (headers)
+(defun web/header-list (headers)
   "Convert HEADERS (hash-table or alist) into a header list."
   (labels
       ((hdr (key val)
@@ -293,16 +295,22 @@ Keys may be symbols or strings."
 
 (defun* web-http-call (method
                        callback
-                       path
                        &key
+                       url
                        (host "localhost")
                        (port 80)
+                       (path "/")
                        extra-headers
                        data
                        (mime-type 'application/form-www-url-encoded)
                        (mode 'batch)
                        logging)
-  "Make an HTTP method to the HOST on PORT with PATH and send DATA.
+  "Make an HTTP method to the URL or the HOST, PORT, PATH and send DATA.
+
+If URL is specified then it takes precedence over HOST, PORT and
+PATH.
+
+Important note: any query in URL is currently IGNORED!
 
 PORT is 80 by default.
 
@@ -313,7 +321,7 @@ DATA is of MIME-TYPE.  We try to interpret DATA and MIME-TYPE
 usefully:
 
 If MIME-TYPE is `application/form-www-url-encoded' then
-`web--to-query-string' is used to to format the DATA into a POST
+`web/to-query-string' is used to to format the DATA into a POST
 body.
 
 When the request comes back the CALLBACK is called.  CALLBACK is
@@ -332,7 +340,16 @@ of the stream or `:done' when the stream ends.
 The default MODE is `batch' which collects all the data from the
 response before calling CALLBACK with all the data as a string."
   (let* ((mode (or mode 'batch))
-         (dest (format "%s:%s/%s" host port path))
+         (parsed-url (url-generic-parse-url
+                      (if url url
+                          (format "http://%s:%d%s" host port path))))
+         (host (progn
+                 (assert (equal (url-type parsed-url) "http")
+                         t "The url scheme must be http")
+                 (url-host parsed-url)))
+         (port (url-port parsed-url))
+         (path (url-filename parsed-url))
+         (dest (format "%s:%s%s" host port path))
          (buf (generate-new-buffer dest))
          (con (open-network-stream
                (format "web-http-post-%s" dest)
@@ -344,13 +361,13 @@ response before calling CALLBACK with all the data as a string."
     (set-process-sentinel
      con
      (lambda (con evt)
-       (web--http-post-sentinel-with-logging con evt logging)))
+       (web/http-post-sentinel-with-logging con evt logging)))
     (set-process-filter
      con
      (lambda (con data)
        (let ((mode mode)
              (cb callback))
-         (web--http-post-filter con data cb mode))))
+         (web/http-post-filter con data cb mode))))
     ;; Send the request
     (let*
         ((to-send
@@ -359,7 +376,7 @@ response before calling CALLBACK with all the data as a string."
                      mime-type
                      (intern mime-type))
                  'application/x-www-form-urlencoded)
-             (web--to-query-string data))))
+             (web/to-query-string data))))
          (headers
           (or
            (loop for hdr in
@@ -370,7 +387,7 @@ response before calling CALLBACK with all the data as a string."
                   (when to-send
                     (format
                      "Content-length:%d\r\n" (length to-send))))
-                 (web--header-list extra-headers))
+                 (web/header-list extra-headers))
               if hdr
               concat hdr)
            ""))
@@ -384,35 +401,38 @@ response before calling CALLBACK with all the data as a string."
     con))
 
 (defun* web-http-get (callback
-                      path
                       &key
+                      url
                       (host "localhost")
                       (port 80)
+                      (path "/")
                       extra-headers
                       (mode 'batch)
                       (logging t))
   "Make a GET calling CALLBACK with the result.
 
-For information on PATH, HOST, PORT, EXTRA-HEADERS and MODE see
-`web-http-call'.
+For information on URL or PATH, HOST, PORT and also EXTRA-HEADERS
+and MODE see `web-http-call'.
 
 The callback probably won't work unless you set `lexical-binding'
 to `t'."
   (web-http-call
    "GET"
    callback
-   path
+   :url url
    :host host
    :port port
+   :path path
    :extra-headers extra-headers
    :mode mode
    :logging t))
 
 (defun* web-http-post (callback
-                       path
                        &key
+                       url
                        (host "localhost")
                        (port 80)
+                       (path "/")
                        extra-headers
                        data
                        (mime-type 'application/x-www-form-urlencoded)
@@ -420,16 +440,18 @@ to `t'."
                        (logging t))
   "Make a POST and call CALLBACK with the result.
 
-For information on PATH, HOST, PORT and MODE see `web-http-call'.
+For information on URL or PATH, HOST, PORT and also MODE see
+`web-http-call'.
 
 The callback probably won't work unless you set `lexical-binding'
 to `t'."
   (web-http-call
    "POST"
    callback
-   path
+   :url url
    :host host
    :port port
+   :path path
    :extra-headers extra-headers
    :data data
    :mime-type mime-type

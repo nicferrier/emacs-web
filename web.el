@@ -306,7 +306,7 @@ Keys may be symbols or strings."
                        (path "/")
                        extra-headers
                        data
-                       (mime-type 'application/form-www-url-encoded)
+                       (mime-type web/request-mimetype)
                        (mode 'batch)
                        logging)
   "Make an HTTP method to the URL or the HOST, PORT, PATH and send DATA.
@@ -376,10 +376,9 @@ response before calling CALLBACK with all the data as a string."
     (let*
         ((to-send
           (cond
-            ((eq (if (symbolp mime-type)
-                     mime-type
-                     (intern mime-type))
-                 'application/x-www-form-urlencoded)
+            ((eq
+              (if (symbolp mime-type) mime-type (intern mime-type))
+              web/request-mimetype)
              (web/to-query-string data))))
          (headers
           (or
@@ -439,7 +438,7 @@ to `t'."
                        (path "/")
                        extra-headers
                        data
-                       (mime-type 'application/x-www-form-urlencoded)
+                       (mime-type web/request-mimetype)
                        (mode 'batch)
                        (logging t))
   "Make a POST and call CALLBACK with the result.

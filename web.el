@@ -461,6 +461,30 @@ to `t'."
    :logging logging
    :mode mode))
 
+(defun* web-json-post (callback &key url data headers)
+  "POST DATA to URL expecting a JSON response sent to CALLBACK.
+
+The CALLBACK is called as:
+
+  CALLBACK RESPONSE-DATA HTTPCON RESPONSE-HEADER
+
+so the function may be defined like this:
+
+  (lambda (data &rest stuff) ...)
+
+HEADERS may be specified, these are treated as extra-headers to
+be sent with the request.
+
+The DATA is sent as `application/x-www-form-urlencoded'."
+  (web-http-call
+   "POST"
+   (lambda (httpcon header data)
+     (let ((lisp-data (json-read-from-string data)))
+       (funcall callback lisp-data httpcon header)))
+   :url url
+   :data data
+   :extra-headers headers))
+
 (provide 'web)
 
 ;;; web.el ends here

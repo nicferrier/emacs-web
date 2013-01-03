@@ -283,7 +283,7 @@ Keys may be symbols or strings."
   "Convert HEADERS (hash-table or alist) into a header list."
   (labels
       ((hdr (key val)
-         (format "%s: %s" key val)))
+         (format "%s: %s\r\n" key val)))
     (cond
       ((hash-table-p headers)
        (let (res)

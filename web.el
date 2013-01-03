@@ -44,6 +44,10 @@
 
 (require 'url-parse)
 
+(defconst web/request-mimetype
+  'application/x-www-form-urlencoded
+  "The default MIME type used for requests.")
+
 (defun web-header-parse (data)
   "Parse an HTTP response header.
 

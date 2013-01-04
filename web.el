@@ -304,6 +304,7 @@ Keys may be symbols or strings."
                        url
                        (host "localhost")
                        (port 80)
+                       secure
                        (path "/")
                        extra-headers
                        data
@@ -312,12 +313,16 @@ Keys may be symbols or strings."
                        logging)
   "Make an HTTP method to the URL or the HOST, PORT, PATH and send DATA.
 
-If URL is specified then it takes precedence over HOST, PORT and
-PATH.
+If URL is specified then it takes precedence over SECURE, HOST,
+PORT and PATH.  URL may be HTTP or HTTPS.
 
 Important note: any query in URL is currently IGNORED!
 
-PORT is 80 by default.
+SECURE is `nil' by default but if `t' then SSL is used.
+
+PORT is 80 by default.  Even if SECURE it `t'.  If you manually
+specify SECURE you should manually specify PORT to be 443.  Using
+URL negates the need for that, an SSL URL will work correctly.
 
 EXTRA-HEADERS is an alist or a hash-table of extra headers to
 send to the server.
@@ -347,10 +352,14 @@ response before calling CALLBACK with all the data as a string."
   (let* ((mode (or mode 'batch))
          (parsed-url (url-generic-parse-url
                       (if url url
-                          (format "http://%s:%d%s" host port path))))
+                          (format "%s://%s:%d%s"
+                                  (if secure "https" "http")
+                                  host port path))))
          (host (progn
-                 (assert (equal (url-type parsed-url) "http")
-                         t "The url scheme must be http")
+                 (assert
+                  (or (equal (url-type parsed-url) "http")
+                      (equal (url-type parsed-url) "https"))
+                  t "The url scheme must be http")
                  (url-host parsed-url)))
          (port (url-port parsed-url))
          (path (url-filename parsed-url))
@@ -358,9 +367,10 @@ response before calling CALLBACK with all the data as a string."
          (buf (generate-new-buffer dest))
          (con (open-network-stream
                (format "web-http-post-%s" dest)
-               buf
-               host
-               port)))
+               buf host port
+               :type (case (url-type parsed-url)
+                       ("http" 'plain)
+                       ("https" 'ssl)))))
     ;; We must use this coding system or the web dies
     (set-process-coding-system con 'raw-text-unix 'raw-text-unix)
     (set-process-sentinel

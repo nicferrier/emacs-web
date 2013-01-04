@@ -5,10 +5,13 @@ is my attempt at a modern one.
 
 The idea is to always use callbacks to collect the response.
 
-Here's an example:
+== Examples ==
+
+Here's a basic example:
 
 {{{
-(setq lexical-binding t)
+##!emacs-lisp
+;; -*- lexical-binding: t -*-
 
 (require 'web)
 
@@ -18,9 +21,14 @@ Here's an example:
   (web-http-post
     (lambda (con header data)
       (message "data received is: %s" data))
-     "/someplace"
-     :data query-data
-     :host "localhost"
-     :mime-type 'application/x-www-form-urlencoded
-     :port 8001))
+     "http://localhost:8001/someplace"
+     :data query-data))
 }}}
+
+== Installing ==
+
+I keep the {{{web}}} package on [[http://marmalade-repo.org]] but if
+you want to install it manually you can just install the package file
+{{{web.el}}}.
+
+Using {{{elpakit}}} you can also get testing.

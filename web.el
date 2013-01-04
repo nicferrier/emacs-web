@@ -368,9 +368,9 @@ response before calling CALLBACK with all the data as a string."
          (con (open-network-stream
                (format "web-http-post-%s" dest)
                buf host port
-               :type (case (url-type parsed-url)
-                       ("http" 'plain)
-                       ("https" 'ssl)))))
+               :type (cond
+		      ((equal (url-type parsed-url) "http") 'plain)
+		      ((equal (url-type parsed-url) "https") 'tls)))))
     ;; We must use this coding system or the web dies
     (set-process-coding-system con 'raw-text-unix 'raw-text-unix)
     (set-process-sentinel

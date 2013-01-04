@@ -6,6 +6,7 @@
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 3 Aug 2012
 ;; Version: 0.3.1
+;; Url: http://github.com/nicferrier/emacs-web
 ;; Keywords: lisp, http, hypermedia
 
 ;; This file is NOT part of GNU Emacs.

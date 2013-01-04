@@ -33,11 +33,11 @@
   (let ((t1 #s(hash-table size 5 data (a 1 b 2 c 3 d "str" e t))))
     (should
      (equal "a=1&b=2&c=3&d=str&e"
-            (web--to-query-string t1))))
+            (web/to-query-string t1))))
   (let ((t2 '((a . 1)("b" . 2)(c . 3)(d . "str")(e . t))))
     (should
      (equal "a=1&b=2&c=3&d=str&e"
-            (web--to-query-string t2)))))
+            (web/to-query-string t2)))))
 
 (ert-deftest web-header-parse ()
   "Test HTTP header parsing."
@@ -75,7 +75,7 @@ Content-length: 1000\r
             (should-not
              (equal
               :done
-              (web--chunked-decode-stream
+              (web/chunked-decode-stream
                proc "b\r\nhello world" 'consumer)))
             (should
              (equal "b\r\nhello world"
@@ -83,7 +83,7 @@ Content-length: 1000\r
             (should
              (equal
               :done
-              (web--chunked-decode-stream
+              (web/chunked-decode-stream
                proc "\r\n0\r\n\r\n" 'consumer)))))))
   ;; Test incomplete chunk packet delivered
   (let ((proc :fake)
@@ -96,7 +96,7 @@ Content-length: 1000\r
             (should-not
              (equal
               :done
-              (web--chunked-decode-stream
+              (web/chunked-decode-stream
                proc "b\r\nhello wor" 'consumer)))
             (should
              (equal "b\r\nhello wor"
@@ -111,7 +111,7 @@ Content-length: 1000\r
           (progn
             (should
              (equal :done
-                    (web--chunked-decode-stream
+                    (web/chunked-decode-stream
                      proc
                      "6\r\nhello!\r\nb\r\nhello world\r\n0\r\n\r\n"
                      'consumer)))
@@ -127,7 +127,7 @@ Content-length: 1000\r
           (progn
             (should
              (equal :done
-                    (web--chunked-decode-stream
+                    (web/chunked-decode-stream
                      proc "5\r\nhello\r\n0\r\n\r\n" 'consumer)))
             (should
              (equal "hello" res)))))))
@@ -146,11 +146,11 @@ Content-length: 1000\r
 Host: hostname\r
 Transfer-encoding: chunked\r\n"))
       (should-not cb-hdr)
-      (web--http-post-filter con "\r\n" callback 'stream)
+      (web/http-post-filter con "\r\n" callback 'stream)
       ;; Because there is no data yet the header is not set
       (should-not cb-hdr)
       ;; Now send a valid chunk through the stream api
-      (web--http-post-filter
+      (web/http-post-filter
        con "b\r\nhello world\r\n" callback 'stream)
       (should cb-hdr)
       (should (equal cb-data "hello world"))
@@ -166,7 +166,7 @@ Transfer-encoding: chunked\r\n"))
        (eq
         :mock-process-finished
         (catch :mock-process-finished
-          (web--http-post-filter con "0\r\n\r\n" callback 'stream)
+          (web/http-post-filter con "0\r\n\r\n" callback 'stream)
           (should (equal cb-data "hello world"))))))))
 
 (ert-deftest web-http-post-filter-batch-mode-content-length ()
@@ -181,13 +181,13 @@ Transfer-encoding: chunked\r\n"))
 Host: hostname\r
 Content-length: 11\r\n"))
         (should-not cb-hdr)
-        (web--http-post-filter con "\r\n" callback 'batch)
+        (web/http-post-filter con "\r\n" callback 'batch)
         (should-not cb-hdr)
         (should
          (eq
           :mock-process-finished
           (catch :mock-process-finished
-            (web--http-post-filter con "hello world" callback 'batch)
+            (web/http-post-filter con "hello world" callback 'batch)
             (should cb-hdr))))
         (should
          (equal "hostname"
@@ -211,9 +211,9 @@ Content-length: 11\r\n"))
 Transfer-encoding: chunked\r
 Host: hostname\r\n"))
       (should-not cb-hdr)
-      (web--http-post-filter con "\r\n" callback 'batch)
+      (web/http-post-filter con "\r\n" callback 'batch)
       (should-not cb-hdr)
-      (web--http-post-filter
+      (web/http-post-filter
        con "b\r\nhello world" callback 'batch)
       (should-not cb-hdr)
       (should-not cb-data)
@@ -221,7 +221,7 @@ Host: hostname\r\n"))
        (eq
         :mock-process-finished
         (catch :mock-process-finished
-          (web--http-post-filter
+          (web/http-post-filter
            con "\r\n0\r\n\r\n" callback 'batch)
           (should cb-hdr)
           (should (equal "hello world" cb-data)))))
@@ -265,7 +265,7 @@ This tests the parameter passing by having an elnode handler "
               (setq data-received data)
               (message "data received is: %s" data-received)
               (setq the-end t))
-            "/"
+            :path "/"
             :port port
             :data init-data)
            ;; Hang till the client callback finishes

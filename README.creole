@@ -10,7 +10,6 @@ The idea is to always use callbacks to collect the response.
 Here's a basic example:
 
 {{{
-##!emacs-lisp
 ;; -*- lexical-binding: t -*-
 
 (require 'web)

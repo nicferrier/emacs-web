@@ -5,6 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 3 Aug 2012
+;; Version: 0.3.1
 ;; Keywords: lisp, http, hypermedia
 
 ;; This file is NOT part of GNU Emacs.
@@ -24,20 +25,19 @@
 
 ;;; Commentary:
 ;;
-;; This is an HTTP client using lexical scope.
-;;
-;;; Source code
-;;
-;;; Style note
-;;
-;; This codes uses the Emacs style of:
+;; This is an HTTP client using lexical scope.  This makes coding with
+;; callbacks easier than with `url'.  This package also provides a
+;; streaming mode where the callback is continually called whenever
+;; chunk encoding chunks are completed.
+
+;;; Code:
+
+;; Style-note: This codes uses the Emacs style of:
 ;;
 ;;    web/private-function
 ;;
 ;; for private functions.
 
-
-;;; Code:
 
 (eval-when-compile
   (require 'cl))

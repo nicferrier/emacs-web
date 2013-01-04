@@ -24,6 +24,35 @@ Here's a basic example:
      :data query-data))
 }}}
 
+SSL works too:
+
+{{{
+;; -*- lexical-binding: t -*-
+
+(require 'web)
+
+(web-http-call
+ "GET"
+ (lambda (conn headers data)
+   (message "%S %S" headers data))
+ :url "https://duckduckgo.com/"
+ :data '(("q" . "search+engine")))
+}}}
+
+and JSON has special support:
+
+
+{{{
+;; -*- lexical-binding: t -*-
+
+(require 'web)
+
+(web-json-post 
+  (lambda (conn headers data)
+     (message "%S" data))
+  "http://someurlthatproducesjson/")
+}}}
+
 == Installing ==
 
 I keep the {{{web}}} package on [[http://marmalade-repo.org]] but if

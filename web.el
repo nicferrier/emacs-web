@@ -141,6 +141,18 @@ CON is used to store state with the process property
                      (web/chunked-decode-stream
                       con left consumer)))))))))
 
+(defun web/content-length-filter (callback con header data)
+  "Does the content-length filtering."
+  (let ((so-far (concat (process-get con :web-buffer) data))
+        (content-len (string-to-number
+                      (gethash 'content-length header))))
+    (if (> content-len (length so-far))
+        (process-put con :web-buffer so-far)
+        ;; We have all the data, callback and then kill the process
+        (unwind-protect
+             (funcall callback con header so-far)
+          (delete-process (process-buffer con))))))
+
 (defun web/http-post-filter (con data callback mode)
   "Filter function for HTTP POST.
 
@@ -202,15 +214,7 @@ by collecting it and then batching it to the CALLBACK."
                             data)))))))
             ;; We have a content-length header so just buffer that much data
             ((gethash 'content-length header)
-             (let ((so-far (process-get con :web-buffer)))
-               (if (< (string-to-number (gethash 'content-length header))
-                      (length so-far))
-                   (process-put
-                    con :web-buffer
-                    (concat so-far data))
-                   ;; We have all the data, callback and then kill the process
-                   (funcall callback con header (concat so-far data))
-                   (delete-process con)))))))))
+             (web/content-length-filter callback con header data)))))))
 
 (defun web/key-value-encode (key value)
   "Encode a KEY and VALUE for url encoding."

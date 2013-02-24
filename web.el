@@ -359,6 +359,7 @@ of the stream or `:done' when the stream ends.
 
 The default MODE is `batch' which collects all the data from the
 response before calling CALLBACK with all the data as a string."
+  (message "web-http-call %s" url)
   (let* ((mode (or mode 'batch))
          (parsed-url (url-generic-parse-url
                       (if url url
@@ -386,6 +387,7 @@ response before calling CALLBACK with all the data as a string."
     (set-process-sentinel
      con
      (lambda (con evt)
+       (message "the logging is set to [%s] %s" evt logging)
        (web/http-post-sentinel-with-logging con evt logging)))
     (set-process-filter
      con

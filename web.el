@@ -484,8 +484,43 @@ to `t'."
    :logging logging
    :mode mode))
 
-(defun* web-json-post (callback &key url data headers)
+(defvar web-json-expected-mimetypes-list
+  '("application/json"
+    "application/x-javascript"
+    "text/javascript"
+    "text/x-javascript"
+    "text/x-json")
+  "List of mimetypes that we use to accept JSON.")
+
+(defun web-json-default-expectation-failure (data http-con headers)
+  "Default expectation callback for JSON expectation errors."
+  (error "web-json failed to read %S as json" data))
+
+(defun* web-json/parse (data
+                       &key
+                       (json-array-type json-array-type)
+                       (json-object-type json-object-type)
+                       (json-key-type json-key-type))
+  "Parse DATA as JSON and return the result."
+  json-array-type
+  (json-read-from-string data))
+
+(defun* web-json-post (callback
+                       &key
+                       url data headers
+                       (json-array-type json-array-type)
+                       (json-object-type json-object-type)
+                       (json-key-type json-key-type)
+                       (expectation-failure-callback
+                        'web-json-default-expectation-failure))
   "POST DATA to URL expecting a JSON response sent to CALLBACK.
+
+See `web-json-expected-mimetypes-list' for the list of Mime Types
+we accept JSON for.  This may be let bound.  If the expectation
+is not met then EXPECTATION-FAILURE-CALLBACK is called being
+passed the CALLBACK parameters.  By default
+EXPECTATION-FAILURE-CALLBACK is
+`web-json-default-expectation-failure'.
 
 The CALLBACK is called as:
 
@@ -498,15 +533,31 @@ so the function may be defined like this:
 HEADERS may be specified, these are treated as extra-headers to
 be sent with the request.
 
-The DATA is sent as `application/x-www-form-urlencoded'."
-  (web-http-call
-   "POST"
-   (lambda (httpcon header data)
-     (let ((lisp-data (json-read-from-string data)))
-       (funcall callback lisp-data httpcon header)))
-   :url url
-   :data data
-   :extra-headers headers))
+The DATA is sent as `application/x-www-form-urlencoded'.
+
+JSON-ARRAY-TYPE, JSON-OBJECT-TYPE and JSON-KEY-TYPE, if present,
+are used to let bind the `json-read' variables of the same name
+affecting the resulting lisp structure."
+  (let ((closed-json-array-type json-array-type)
+        (closed-json-object-type json-object-type)
+        (closed-json-key-type json-key-type))
+    (web-http-call
+     "POST"
+     (lambda (httpcon header data)
+       ;; Add a member test for the MIMETYPE expectation
+       (let ((lisp-data
+              (condition-case err
+                  (web-json/parse
+                   data
+                   :json-array-type closed-json-array-type
+                   :json-object-type closed-json-object-type
+                   :json-key-type closed-json-key-type)
+                (error
+                 (funcall expectation-failure-callback data httpcon header)))))
+         (funcall callback lisp-data httpcon header)))
+     :url url
+     :data data
+     :extra-headers headers)))
 
 (provide 'web)
 

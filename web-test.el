@@ -27,6 +27,25 @@
 (require 'web)
 (require 'elnode)
 (require 'fakir)
+(require 'cl) ; really we need dflet package
+
+
+(ert-deftest web-json-let-bind ()
+  "Test whether CL arguments are let-bindings."
+  ;; First prove that it can be overridden
+  (flet ((web-json-cl-test (data &key json-array-type json-array-type)
+           (json-read-from-string data)))
+    (should
+     (equal
+      '(1 2 3)
+      (web-json-cl-test (json-encode '(1 2 3)) :json-array-type 'list))))
+  ;; Now prove that it need not be overridden
+  (flet ((web-json-cl-test (data &key (json-array-type json-array-type))
+           (json-read-from-string data)))
+    (should
+     (equal
+      '[1 2 3]
+      (web-json-cl-test (json-encode '(1 2 3)))))))
 
 (ert-deftest web--to-query-string ()
   "Test query string making."

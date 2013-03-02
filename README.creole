@@ -57,7 +57,7 @@ SSL works too:
  :data '(("q" . "search+engine")))
 }}}
 
-and JSON has special support:
+and JSON has special support and a *different* callback form:
 
 {{{
 ;; -*- lexical-binding: t -*-
@@ -65,10 +65,38 @@ and JSON has special support:
 (require 'web)
 
 (web-json-post 
-  (lambda (conn headers data)
+  (lambda (data conn headers)
      (message "%S" data))
-  "http://someurlthatproducesjson/")
+  :url "http://someurlthatproducesjson/")
 }}}
+
+The JSON callback form allows just data to be collected:
+
+{{{
+;; -*- lexical-binding: t -*-
+(require 'web)
+
+(web-json-post 
+  (lambda (data)
+     (message "%S" data))
+  :url "http://someurlthatproducesjson/")
+}}}
+
+and the JSON support allows the usual overriding of JSON type
+mappings:
+
+{{{
+;; -*- lexical-binding: t -*-
+(require 'web)
+
+(web-json-post 
+  (lambda (data)
+    ;; data will be a list
+    (message "The car => %s" (car data)))
+  :url "http://someurlthatproducesjson/"
+  :json-object-type 'list)
+}}}
+
 
 == Installing ==
 

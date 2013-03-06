@@ -496,14 +496,13 @@ to `t'."
   "Default expectation callback for JSON expectation errors."
   (error "web-json failed to read %S as json" data))
 
-(defun* web-json/parse (data
+(defun* web-json/parse (json-candidate-data
                        &key
                        (json-array-type json-array-type)
                        (json-object-type json-object-type)
                        (json-key-type json-key-type))
   "Parse DATA as JSON and return the result."
-  json-array-type
-  (json-read-from-string data))
+  (json-read-from-string json-candidate-data))
 
 (defun* web-json-post (callback
                        &key

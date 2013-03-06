@@ -540,19 +540,19 @@ affecting the resulting lisp structure."
   (let ((closed-json-array-type json-array-type)
         (closed-json-object-type json-object-type)
         (closed-json-key-type json-key-type))
-    (web-http-call
-     "POST"
-     (lambda (httpcon header data)
+    (web-http-post
+     (lambda (httpcon header http-data)
        ;; Add a member test for the MIMETYPE expectation
        (let ((lisp-data
               (condition-case err
                   (web-json/parse
-                   data
+                   http-data
                    :json-array-type closed-json-array-type
                    :json-object-type closed-json-object-type
                    :json-key-type closed-json-key-type)
                 (error
-                 (funcall expectation-failure-callback data httpcon header)))))
+                 (funcall expectation-failure-callback
+                          http-data httpcon header)))))
          (funcall callback lisp-data httpcon header)))
      :url url
      :data data

@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 3 Aug 2012
-;; Version: 0.3.4
+;; Version: 0.3.5
 ;; Url: http://github.com/nicferrier/emacs-web
 ;; Keywords: lisp, http, hypermedia
 
@@ -360,7 +360,8 @@ of the stream or `:done' when the stream ends.
 
 The default MODE is `batch' which collects all the data from the
 response before calling CALLBACK with all the data as a string."
-  (message "web-http-call %s" url)
+  (when logging
+    (message "web-http-call %s" url))
   (let* ((mode (or mode 'batch))
          (parsed-url (url-generic-parse-url
                       (if url url

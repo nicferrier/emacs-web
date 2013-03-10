@@ -129,7 +129,7 @@ keys:
 which are stored as symbols the same as the normal header keys.
 
 
-=== web-http-call method callback &key url host port secure path extra-headers data mime-type mode logging ===
+=== web-http-call method callback &key url (host "localhost") (port 80) secure (path "/") extra-headers data (mime-type web/request-mimetype) (mode 'batch) logging ===
 
 Make an HTTP method to the //url// or the //host//, //port//, //path// and send //data//.
 
@@ -171,7 +171,7 @@ The default //mode// is [[batch]] which collects all the data from the
 response before calling //callback// with all the data as a string.
 
 
-=== web-http-get callback &key url host port path extra-headers mode logging ===
+=== web-http-get callback &key url (host "localhost") (port 80) (path "/") extra-headers (mode 'batch)) (logging t) ===
 
 Make a GET calling //callback// with the result.
 
@@ -182,7 +182,7 @@ The callback probably won't work unless you set [[lexical-binding]]
 to [[t]].
 
 
-=== web-http-post callback &key url host port path extra-headers data mime-type mode logging ===
+=== web-http-post callback &key url host ("localhost") port (80) path ("/") extra-headers data mime-type (web/request-mimetype) mode ((quote batch)) logging (t) ===
 
 Make a POST and call //callback// with the result.
 

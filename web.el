@@ -497,7 +497,7 @@ to `t'."
   "Default expectation callback for JSON expectation errors."
   (error "web-json failed to read %S as json" data))
 
-(defun* web-json/parse (json-candidate-data
+(defun* web/json-parse (json-candidate-data
                        &key
                        (json-array-type json-array-type)
                        (json-object-type json-object-type)
@@ -546,7 +546,7 @@ affecting the resulting lisp structure."
        ;; Add a member test for the MIMETYPE expectation
        (let ((lisp-data
               (condition-case err
-                  (web-json/parse
+                  (web/json-parse
                    http-data
                    :json-array-type closed-json-array-type
                    :json-object-type closed-json-object-type

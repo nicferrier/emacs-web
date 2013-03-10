@@ -236,7 +236,7 @@ by collecting it and then batching it to the CALLBACK."
     (t
      (format "%s" (url-hexify-string (format "%s" key))))))
 
-(defun web/to-query-string (object)
+(defun web-to-query-string (object)
   "Convert OBJECT (a hash-table or alist) to an HTTP query string.
 
 If OBJECT is of type `hash-table' then the keys and values of the
@@ -342,7 +342,7 @@ DATA is of MIME-TYPE.  We try to interpret DATA and MIME-TYPE
 usefully:
 
 If MIME-TYPE is `application/form-www-url-encoded' then
-`web/to-query-string' is used to to format the DATA into a POST
+`web-to-query-string' is used to to format the DATA into a POST
 body.
 
 When the request comes back the CALLBACK is called.  CALLBACK is
@@ -403,7 +403,7 @@ response before calling CALLBACK with all the data as a string."
             ((eq
               (if (symbolp mime-type) mime-type (intern mime-type))
               web/request-mimetype)
-             (web/to-query-string data))))
+             (web-to-query-string data))))
          (headers
           (or
            (loop for hdr in

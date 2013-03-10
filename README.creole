@@ -38,8 +38,8 @@ Here's a POST:
   (web-http-post
     (lambda (con header data)
       (message "data received is: %s" data))
-     "http://localhost:8001/someplace"
-     :data query-data))
+    :url "http://localhost:8001/someplace"
+    :data query-data))
 }}}
 
 SSL works too:

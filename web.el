@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 3 Aug 2012
-;; Version: 0.3.3
+;; Version: 0.3.4
 ;; Url: http://github.com/nicferrier/emacs-web
 ;; Keywords: lisp, http, hypermedia
 
@@ -388,7 +388,7 @@ response before calling CALLBACK with all the data as a string."
     (set-process-sentinel
      con
      (lambda (con evt)
-       (message "the logging is set to [%s] %s" evt logging)
+       ;;(message "the logging is set to [%s] %s" evt logging)
        (web/http-post-sentinel-with-logging con evt logging)))
     (set-process-filter
      con

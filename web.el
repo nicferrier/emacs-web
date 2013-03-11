@@ -509,6 +509,7 @@ to `t'."
 (defun* web-json-post (callback
                        &key
                        url data headers
+                       (logging t)
                        (json-array-type json-array-type)
                        (json-object-type json-object-type)
                        (json-key-type json-key-type)
@@ -558,7 +559,8 @@ affecting the resulting lisp structure."
          (funcall callback lisp-data httpcon header)))
      :url url
      :data data
-     :extra-headers headers)))
+     :extra-headers headers
+     :logging logging)))
 
 (provide 'web)
 

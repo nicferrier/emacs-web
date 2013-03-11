@@ -453,7 +453,7 @@ to `t'."
    :path path
    :extra-headers extra-headers
    :mode mode
-   :logging t))
+   :logging logging))
 
 (defun* web-http-post (callback
                        &key

@@ -496,7 +496,8 @@ to `t'."
 
 (defun web-json-default-expectation-failure (data http-con headers)
   "Default expectation callback for JSON expectation errors."
-  (error "web-json failed to read %S as json" data))
+  (error "web-json failed to read %S as json with %s and %s"
+         data http-con headers))
 
 (defun* web/json-parse (json-candidate-data
                        &key
@@ -554,6 +555,8 @@ affecting the resulting lisp structure."
                    :json-object-type closed-json-object-type
                    :json-key-type closed-json-key-type)
                 (error
+                 (when logging
+                   (message "web-json-post expectation failure %S" err))
                  (funcall expectation-failure-callback
                           http-data httpcon header)))))
          (funcall callback lisp-data httpcon header)))

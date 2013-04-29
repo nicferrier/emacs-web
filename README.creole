@@ -5,6 +5,16 @@ is my attempt at a modern one.
 
 The idea is to always use callbacks to collect the response.
 
+== Interactive ==
+
+An interactive function is included:
+
+{{{
+M-x web-get [RET] url
+}}}
+
+I'm hoping to make this plugin to ffap.
+
 == Examples ==
 
 Here's a basic example:

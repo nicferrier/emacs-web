@@ -570,6 +570,30 @@ affecting the resulting lisp structure."
      :extra-headers headers
      :logging logging)))
 
+(defvar web-get-history-list nil
+  "History for `web-get' interactive forms.")
+
+;;;###autoload
+(defun web-get (url &optional buffer)
+  "Get the specified URL into the BUFFER."
+  (interactive
+   (list
+    (read-from-minibuffer "URL: " nil nil nil 'web-get-history-list)
+    (when current-prefix-arg
+        (read-buffer "Buffer: " '("*web-get*")))))
+  (let ((handler
+         (lambda (httpc header data)
+           (with-current-buffer
+               (if (bufferp buffer)
+                   buffer
+                   (if (stringp buffer)
+                       (generate-new-buffer buffer)
+                       (generate-new-buffer "*web-get*")))
+             (goto-char (point-max))
+             (insert data)
+             (switch-to-buffer (current-buffer))))))
+    (web-http-get handler :url url)))
+
 (provide 'web)
 
 ;;; web.el ends here

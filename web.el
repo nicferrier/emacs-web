@@ -309,6 +309,7 @@ Keys may be symbols or strings."
         (lambda (pair) (hdr (car pair)(cdr pair)))
         headers)))))
 
+;;;###autoload
 (defun* web-http-call (method
                        callback
                        &key
@@ -429,6 +430,7 @@ response before calling CALLBACK with all the data as a string."
       (process-send-string con submission))
     con))
 
+;;;###autoload
 (defun* web-http-get (callback
                       &key
                       url
@@ -456,6 +458,7 @@ to `t'."
    :mode mode
    :logging logging))
 
+;;;###autoload
 (defun* web-http-post (callback
                        &key
                        url
@@ -508,6 +511,7 @@ to `t'."
   "Parse DATA as JSON and return the result."
   (json-read-from-string json-candidate-data))
 
+;;;###autoload
 (defun* web-json-post (callback
                        &key
                        url data headers

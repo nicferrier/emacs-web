@@ -375,7 +375,8 @@ response before calling CALLBACK with all the data as a string."
                   t "The url scheme must be http")
                  (url-host parsed-url)))
          (port (url-port parsed-url))
-         (path (url-filename parsed-url))
+         (path (let ((pth (url-filename parsed-url)))
+                 (if (equal pth "") "/" pth)))
          (dest (format "%s:%s%s" host port path))
          (buf (generate-new-buffer dest))
          (con (open-network-stream

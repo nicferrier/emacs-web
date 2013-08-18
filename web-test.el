@@ -28,7 +28,7 @@
 (require 'elnode)
 (require 'fakir)
 (require 'cl) ; really we need dflet package
-
+(require 'noflet)
 
 (ert-deftest web-json-let-bind ()
   "Test whether CL arguments are let-bindings."
@@ -313,30 +313,31 @@ This tests the parameter passing by having an elnode handler "
        data-received)
     ;; Start a server on the port
     (unwind-protect
-	;; Start the server
-	(elnode-start
-	 (lambda (httpcon)
-	   (let ((header-values (mapcar (lambda (header)
-					  (append headers (elnode-http-header httpcon header)))
-					'("Header1" "Header2"))))
-	     (elnode-http-start httpcon 200 '(Content-type . "text/plain"))
-	     (let ((response (mapconcat 'identity header-values "")))
-	       (elnode-http-return httpcon response))))
-	 :port port)
-      ;; GET with extra headers
-      (web-http-get
-       (lambda (con header data)
-	 (setq data-received data)
-	 (message "data received is: %s" data-received)
-	 (setq the-end t))
-       :path "/"
-       :host "localhost"
-       :port port
-       :extra-headers '(("Header1" . "Value1")
-			("Header2" . "Value2")))
-       ;; Hang till the client callback finishes
-       (while (not the-end)
-	 (sit-for 1))
+         ;; Start the server
+         (progn
+           (elnode-start
+            (lambda (httpcon)
+              (let ((header-values (mapcar (lambda (header)
+                                             (append headers (elnode-http-header httpcon header)))
+                                           '("Header1" "Header2"))))
+                (elnode-http-start httpcon 200 '(Content-type . "text/plain"))
+                (let ((response (mapconcat 'identity header-values "")))
+                  (elnode-http-return httpcon response))))
+            :port port)
+           ;; GET with extra headers
+           (web-http-get
+            (lambda (con header data)
+              (setq data-received data)
+              (message "data received is: %s" data-received)
+              (setq the-end t))
+            :path "/"
+            :host "localhost"
+            :port port
+            :extra-headers '(("Header1" . "Value1")
+                             ("Header2" . "Value2")))
+           ;; Hang till the client callback finishes
+           (while (not the-end)
+             (sit-for 1)))
       ;; And when we're done with the server...
       (elnode-stop port))
     ;; And a quick check of the contents

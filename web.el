@@ -384,8 +384,7 @@ of the stream or `:done' when the stream ends.
 
 The default MODE is `batch' which collects all the data from the
 response before calling CALLBACK with all the data as a string."
-  (when logging
-    (message "web-http-call %s" url))
+  (when logging (web/log url))
   (let* ((mode (or mode 'batch))
          (parsed-url (url-generic-parse-url
                       (if url url

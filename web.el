@@ -607,6 +607,19 @@ affecting the resulting lisp structure."
              (switch-to-buffer (current-buffer))))))
     (web-http-get handler :url url)))
 
+(defun web-header (header name &optional convert)
+  "Look up NAME in HEADER."
+  (let ((val (if (hash-table-p header)
+                 (let ((v (gethash (intern name) header)))
+                   (when v (cons name v)))
+                 ;; Else presume it's an alist
+                 (assoc name header))))
+    (when val
+      (case convert
+        (:num (string-to-number (cdr val)))
+        (t val)))))
+
+
 (provide 'web)
 
 ;;; web.el ends here

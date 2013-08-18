@@ -309,6 +309,29 @@ Keys may be symbols or strings."
         (lambda (pair) (hdr (car pair)(cdr pair)))
         headers)))))
 
+(defun web/header-string (method headers mime-type to-send)
+  (let ((http-hdrs (web/header-list headers)))
+    (when (member method '("POST" "PUT"))
+      (unless (< 1 (length to-send))
+        (push
+         (format "Content-type: %s\r\n" mime-type)
+         http-hdrs)))
+    (when (and to-send (> (length to-send) 0))
+      (push
+       (format "Content-length:%d\r\n" (length to-send))
+       http-hdrs))
+    (loop for hdr in http-hdrs
+       if hdr concat hdr)))
+
+(defun web/log (log)
+  (when log
+    (with-current-buffer (get-buffer-create "*web-log*")
+      (save-excursion
+        (goto-char (point-max))
+        (insert "web-http ")
+        (insert (format "%s" log))
+        (insert "\n")))))
+
 ;;;###autoload
 (defun* web-http-call (method
                        callback

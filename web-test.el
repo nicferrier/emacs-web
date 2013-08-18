@@ -343,4 +343,30 @@ This tests the parameter passing by having an elnode handler "
     ;; And a quick check of the contents
     (should (equal "Value1Value2" data-received))))
 
+;;; experimental
+(ert-deftest web-handler ()
+  "Test the macro for making handlers."
+  (should
+   (eq 
+    (funcall
+     (web-handler (con header data)
+       (200 :ok)
+       (401 :unauthorized))
+     :fakecon
+     '(("status-code" . "200"))
+     "some data")
+    :ok))
+  (let ((h (make-hash-table :test 'equal)))
+    (puthash 'status-code "200" h)
+    (should
+     (eq 
+      (funcall
+       (web-handler (con header data)
+         (200 :ok)
+         (401 :unauthorized))
+       :fakecon
+       h
+       "some data")
+      :ok))))
+
 ;;; web-test.el ends here

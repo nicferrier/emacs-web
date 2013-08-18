@@ -430,25 +430,16 @@ response before calling CALLBACK with all the data as a string."
               web/request-mimetype)
              (web-to-query-string data))))
          (headers
-          (or
-           (loop for hdr in
-                (append
-                 (list
-                  (when (member method '("POST" "PUT"))
-                    (format "Content-type: %s\r\n" mime-type))
-                  (when to-send
-                    (format
-                     "Content-length:%d\r\n" (length to-send))))
-                 (web/header-list extra-headers))
-              if hdr
-              concat hdr)
-           ""))
+          (or (web/header-string
+               method extra-headers mime-type to-send)
+              ""))
          (submission
           (format
            "%s %s HTTP/1.1\r\nHost: %s\r\n%s\r\n%s"
            method path host
            headers
            (if to-send to-send ""))))
+      (when logging (web/log submission))
       (process-send-string con submission))
     con))
 

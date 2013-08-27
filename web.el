@@ -591,7 +591,8 @@ affecting the resulting lisp structure."
   "Get the specified URL into the BUFFER."
   (interactive
    (list
-    (read-from-minibuffer "URL: " nil nil nil 'web-get-history-list)
+    (let ((def-url (browse-url-url-at-point)))
+      (read-from-minibuffer "URL: " def-url nil nil 'web-get-history-list))
     (when current-prefix-arg
         (read-buffer "Buffer: " '("*web-get*")))))
   (let ((handler

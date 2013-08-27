@@ -45,6 +45,7 @@
 
 (require 'url-parse)
 (require 'json)
+(require 'browse-url)
 
 (defconst web/request-mimetype
   'application/x-www-form-urlencoded

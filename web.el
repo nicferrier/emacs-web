@@ -46,6 +46,7 @@
 (require 'url-parse)
 (require 'json)
 (require 'browse-url)
+(require 'dash)
 
 (defconst web/request-mimetype
   'application/x-www-form-urlencoded

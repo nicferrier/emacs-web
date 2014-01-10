@@ -58,6 +58,34 @@
      (equal "a=1&b=2&c=3&d=str&e"
             (web-to-query-string t2)))))
 
+(ert-deftest web-to-multipart ()
+  "Test the multipart creation"
+  (fakir-with-file-buffer file1
+    (with-current-buffer file1 (insert (json-encode '((a . "data")))))
+    (noflet ((web/to-multipart-boundary () "BOUNDARY")
+             (buffer-file-name (buffer) "/tmp/test-file.txt"))
+      (let ((mp (web-to-multipart
+                 `((param . "value")
+                   (somefile . ,file1)
+                   (param2 . "another")))))
+        (should 
+         (equal 
+          (cadr mp)
+          "--BOUNDARY
+content-disposition: form-data; name=\"param\"
+
+value
+--BOUNDARY
+content-disposition: form-data; name=\"param2\"
+
+another
+--BOUNDARY
+content-disposition: form-data; name=\"somefile\"; filename=\"test-file\"
+Content-type: text/plain
+
+{\"a\":\"data\"}
+"))))))
+
 (ert-deftest web-header-parse ()
   "Test HTTP header parsing."
   (let ((hdrs (web-header-parse

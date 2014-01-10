@@ -51,6 +51,10 @@
   'application/x-www-form-urlencoded
   "The default MIME type used for requests.")
 
+(defconst web-multipart-mimetype
+  'multipart/form-data
+  "The MIME type used for multipart requests.")
+
 (defun web-header-parse (data)
   "Parse an HTTP response header.
 
@@ -264,6 +268,61 @@ Keys may be symbols or strings."
      ((listp object)
       object))
    "&"))
+
+
+;; What a multipart body looks like
+;; Content-type: multipart/form-data, boundary=AaB03x
+;;
+;; --AaB03x
+;; content-disposition: form-data; name="field1"
+;;
+;; Joe Blow
+;; --AaB03x
+;; content-disposition: form-data; name="pics"; filename="file1.txt"
+;; Content-Type: text/plain
+;;
+;;  ... contents of file1.txt ...
+;; --AaB03x--
+
+(defun web/to-multipart-boundary ()
+  "Make a boundary marker."
+  (sha1 (format "%s%s" (random) (time-stamp-string))))
+
+(defun web-to-multipart (data)
+  "Convert DATA, an ALIST or Hashtable, into a Multipart body.
+
+Returns a list of the part boundary string and the multipart
+body itself."
+  (noflet ((is-file (kv)
+             (let ((b (cdr kv)))
+               (and (bufferp b) (buffer-file-name b) b))))
+    (let ((boundary (web/to-multipart-boundary)))
+      (list boundary
+            (format
+             "%s\n%s\n" 
+             (mapconcat  ; first the params ...
+              (lambda (kv)
+                (let ((name (car kv))
+                      (value (cdr kv)))
+                  (format
+                   "--%s\r
+content-disposition: form-data; name=\"%s\"\r\n\r\n%s"
+                   boundary name value)))
+              (-filter (lambda (kv) (not (is-file kv))) data) "\n")
+             (mapconcat  ; then the files ...
+              (lambda (kv)
+                (let* ((name (car kv))
+                       (buffer (cdr kv))
+                       (filename (buffer-file-name buffer))
+                       (mime-enc (or (mm-default-file-encoding filename) "text/plain")))
+                  (format
+                   "--%s\r
+content-disposition: form-data; name=\"%s\"; filename=\"%s\"\r
+Content-type: %s\r\n\r\n%s"
+                   boundary name (file-name-base filename) mime-enc
+                   ;; FIXME - We should base64 the content when appropriate
+                   (with-current-buffer buffer (buffer-string)))))
+              (-filter 'is-file data) "\n"))))))
 
 (defvar web-log-info nil
   "Whether to log info messages, specifically from the sentinel.")

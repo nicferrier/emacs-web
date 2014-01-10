@@ -292,38 +292,38 @@ Keys may be symbols or strings."
 (defun web-to-multipart (data)
   "Convert DATA, an ALIST or Hashtable, into a Multipart body.
 
-Returns a list of the part boundary string and the multipart
-body itself."
+Returns a string of the multipart body propertized with
+`:boundary' with a value of the boundary string."
   (noflet ((is-file (kv)
              (let ((b (cdr kv)))
                (and (bufferp b) (buffer-file-name b) b))))
     (let ((boundary (web/to-multipart-boundary)))
-      (list boundary
-            (format
-             "%s\n%s\n" 
-             (mapconcat  ; first the params ...
-              (lambda (kv)
-                (let ((name (car kv))
-                      (value (cdr kv)))
-                  (format
-                   "--%s\r
+      (propertize
+       (format
+        "%s\n%s\n" 
+        (mapconcat  ; first the params ...
+         (lambda (kv)
+           (let ((name (car kv))
+                 (value (cdr kv)))
+             (format
+              "--%s\r
 content-disposition: form-data; name=\"%s\"\r\n\r\n%s"
-                   boundary name value)))
-              (-filter (lambda (kv) (not (is-file kv))) data) "\n")
-             (mapconcat  ; then the files ...
-              (lambda (kv)
-                (let* ((name (car kv))
-                       (buffer (cdr kv))
-                       (filename (buffer-file-name buffer))
-                       (mime-enc (or (mm-default-file-encoding filename) "text/plain")))
-                  (format
-                   "--%s\r
+              boundary name value)))
+         (-filter (lambda (kv) (not (is-file kv))) data) "\n")
+        (mapconcat  ; then the files ...
+         (lambda (kv)
+           (let* ((name (car kv))
+                  (buffer (cdr kv))
+                  (filename (buffer-file-name buffer))
+                  (mime-enc (or (mm-default-file-encoding filename) "text/plain")))
+             (format
+              "--%s\r
 content-disposition: form-data; name=\"%s\"; filename=\"%s\"\r
 Content-type: %s\r\n\r\n%s"
-                   boundary name (file-name-base filename) mime-enc
-                   ;; FIXME - We should base64 the content when appropriate
-                   (with-current-buffer buffer (buffer-string)))))
-              (-filter 'is-file data) "\n"))))))
+              boundary name (file-name-base filename) mime-enc
+              ;; FIXME - We should base64 the content when appropriate
+              (with-current-buffer buffer (buffer-string)))))
+         (-filter 'is-file data) "\n")) :boundary boundary))))
 
 (defvar web-log-info nil
   "Whether to log info messages, specifically from the sentinel.")
@@ -371,18 +371,32 @@ Content-type: %s\r\n\r\n%s"
         headers)))))
 
 (defun web/header-string (method headers mime-type to-send)
-  (let ((http-hdrs (web/header-list headers)))
+  "Return a string of all the HEADERS formatted for a request.
+
+Content-Type and Content-Length are both computed automatically.
+
+METHOD specifies the usual HTTP method and therefore whether
+there might be a Content-Type on the request body.
+
+MIME-TYPE specifies the MIME-TYPE of any TO-SEND.
+
+TO-SEND is any request body that needs to be sent.  TO-SEND may
+be propertized with a multipart boundary marker which needs to be
+set on the Content-Type header."
+  (let ((http-hdrs (web/header-list headers))
+        (boundary (and to-send
+                       (plist-get (text-properties-at 0 to-send) :boundary))))
     (when (member method '("POST" "PUT"))
-      (unless (< 1 (length to-send))
-        (push
-         (format "Content-type: %s\r\n" mime-type)
+      (when (> (length to-send) 1)
+        (push (format
+               "Content-type: %s%s\r\n" mime-type
+               (if boundary (format ", boundary=%s" boundary) ""))
          http-hdrs)))
     (when (and to-send (> (length to-send) 0))
       (push
-       (format "Content-length:%d\r\n" (length to-send))
+       (format "Content-length: %d\r\n" (length to-send))
        http-hdrs))
-    (loop for hdr in http-hdrs
-       if hdr concat hdr)))
+    (loop for hdr in http-hdrs if hdr concat hdr)))
 
 (defun web/log (log)
   (when log
@@ -429,6 +443,9 @@ usefully:
 If MIME-TYPE is `application/form-www-url-encoded' then
 `web-to-query-string' is used to to format the DATA into a POST
 body.
+
+If MIME-TYPE is `multipart/form-data' then `web-to-multipart' is
+called to get a POST body.
 
 When the request comes back the CALLBACK is called.  CALLBACK is
 always passed 3 arguments: the HTTP connection which is a process
@@ -484,16 +501,15 @@ response before calling CALLBACK with all the data as a string."
          (web/http-post-filter con data cb mode))))
     ;; Send the request
     (let*
-        ((to-send
-          (cond
-            ((eq
-              (if (symbolp mime-type) mime-type (intern mime-type))
-              web/request-mimetype)
-             (web-to-query-string data))))
-         (headers
-          (or (web/header-string
-               method extra-headers mime-type to-send)
-              ""))
+        ((sym-mt (if (symbolp mime-type) mime-type (intern mime-type)))
+         (to-send (case sym-mt
+                    ('multipart/form-data
+                     (web-to-multipart data))
+                    ('application/x-www-form-urlencoded
+                     (web-to-query-string data))))
+         (headers (or (web/header-string
+                       method extra-headers mime-type to-send)
+                      ""))
          (submission
           (format
            "%s %s HTTP/1.1\r\nHost: %s\r\n%s\r\n%s"

@@ -70,7 +70,7 @@
                    (param2 . "another")))))
         (should 
          (equal 
-          (cadr mp)
+          mp
           "--BOUNDARY
 content-disposition: form-data; name=\"param\"
 
@@ -85,6 +85,31 @@ Content-type: text/plain
 
 {\"a\":\"data\"}
 "))))))
+
+(ert-deftest web/header-string ()
+  "Test that we can make request headers."
+  (should
+   (equal
+    (web/header-string "GET" '(("X-Test" . "value")) nil nil)
+    "X-Test: value\r\n"))
+  ;; Now one that sets the automatic headers
+  (should
+   (equal
+    (web/header-string "POST" '(("X-Test" . "value")) web/request-mimetype "a=1")
+    "Content-length: 3\r
+Content-type: application/x-www-form-urlencoded\r
+X-Test: value\r
+"))
+  ;; And now a mulitpart - note the fake multipart body
+  (should
+   (equal
+    (web/header-string
+     "POST" '(("X-Test" . "value")) web/request-mimetype
+     (propertize "a=1" :boundary "BOUNDARY"))
+    "Content-length: 3\r
+Content-type: application/x-www-form-urlencoded, boundary=BOUNDARY\r
+X-Test: value\r
+")))
 
 (ert-deftest web-header-parse ()
   "Test HTTP header parsing."

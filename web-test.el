@@ -70,20 +70,21 @@
                    (param2 . "another")))))
         (should 
          (equal 
-          mp
-          "--BOUNDARY
-content-disposition: form-data; name=\"param\"
-
+          (substring-no-properties mp)
+          "--BOUNDARY\r
+content-disposition: form-data; name=\"param\"\r
+\r
 value
---BOUNDARY
-content-disposition: form-data; name=\"param2\"
-
-another
---BOUNDARY
-content-disposition: form-data; name=\"somefile\"; filename=\"test-file\"
-Content-type: text/plain
-
-{\"a\":\"data\"}
+--BOUNDARY\r
+content-disposition: form-data; name=\"param2\"\r
+\r
+another\r
+--BOUNDARY\r
+content-disposition: form-data; name=\"somefile\"; filename=\"test-file\"\r
+Content-type: text/plain\r
+\r
+{\"a\":\"data\"}\r
+--BOUNDARY--\r
 "))))))
 
 (ert-deftest web/header-string ()

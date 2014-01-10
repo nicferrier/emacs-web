@@ -297,33 +297,34 @@ Returns a string of the multipart body propertized with
   (noflet ((is-file (kv)
              (let ((b (cdr kv)))
                (and (bufferp b) (buffer-file-name b) b))))
-    (let ((boundary (web/to-multipart-boundary)))
-      (propertize
-       (format
-        "%s\n%s\n" 
-        (mapconcat  ; first the params ...
-         (lambda (kv)
-           (let ((name (car kv))
-                 (value (cdr kv)))
-             (format
-              "--%s\r
+    (let* ((boundary (web/to-multipart-boundary))
+           (parts (mapconcat  ; first the params ...
+                   (lambda (kv)
+                     (let ((name (car kv))
+                           (value (cdr kv)))
+                       (format
+                        "--%s\r
 content-disposition: form-data; name=\"%s\"\r\n\r\n%s"
-              boundary name value)))
-         (-filter (lambda (kv) (not (is-file kv))) data) "\n")
-        (mapconcat  ; then the files ...
-         (lambda (kv)
-           (let* ((name (car kv))
-                  (buffer (cdr kv))
-                  (filename (buffer-file-name buffer))
-                  (mime-enc (or (mm-default-file-encoding filename) "text/plain")))
-             (format
-              "--%s\r
+                        boundary name value)))
+                   (-filter (lambda (kv) (not (is-file kv))) data) "\n"))
+           (files (mapconcat  ; then the files ...
+                   (lambda (kv)
+                     (let* ((name (car kv))
+                            (buffer (cdr kv))
+                            (filename (buffer-file-name buffer))
+                            (mime-enc
+                             (or (mm-default-file-encoding filename) "text/plain")))
+                       (format
+                        "--%s\r
 content-disposition: form-data; name=\"%s\"; filename=\"%s\"\r
 Content-type: %s\r\n\r\n%s"
-              boundary name (file-name-base filename) mime-enc
-              ;; FIXME - We should base64 the content when appropriate
-              (with-current-buffer buffer (buffer-string)))))
-         (-filter 'is-file data) "\n")) :boundary boundary))))
+                        boundary name (file-name-base filename) mime-enc
+                        ;; FIXME - We should base64 the content when appropriate
+                        (with-current-buffer buffer (buffer-string)))))
+                   (-filter 'is-file data) "\n")))
+      (propertize (format "%s\r\n%s\r\n--%s--\r\n" 
+                          parts files boundary)
+                  :boundary boundary))))
 
 (defvar web-log-info nil
   "Whether to log info messages, specifically from the sentinel.")

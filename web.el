@@ -393,7 +393,7 @@ set on the Content-Type header."
       (when (> (length to-send) 1)
         (push (format
                "Content-type: %s%s\r\n" mime-type
-               (if boundary (format ", boundary=%s" boundary) ""))
+               (if boundary (format "; boundary=%s" boundary) ""))
          http-hdrs)))
     (when (and to-send (> (length to-send) 0))
       (push

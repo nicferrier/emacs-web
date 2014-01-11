@@ -215,7 +215,8 @@ Content-length: 1000\r
                        (setq cb-hdr hdr))
                      (unless (eq data :done)
                        (setq cb-data data)))))
-    (fakir-mock-process :fake ((:buffer "HTTP/1.1 200\r
+    (fakir-mock-process :fake
+        ((:buffer "HTTP/1.1 200\r
 Host: hostname\r
 Transfer-encoding: chunked\r\n"))
       (should-not cb-hdr)

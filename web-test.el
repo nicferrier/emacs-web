@@ -74,7 +74,7 @@
           "--BOUNDARY\r
 content-disposition: form-data; name=\"param\"\r
 \r
-value
+value\r
 --BOUNDARY\r
 content-disposition: form-data; name=\"param2\"\r
 \r
@@ -108,7 +108,7 @@ X-Test: value\r
      "POST" '(("X-Test" . "value")) web/request-mimetype
      (propertize "a=1" :boundary "BOUNDARY"))
     "Content-length: 3\r
-Content-type: application/x-www-form-urlencoded, boundary=BOUNDARY\r
+Content-type: application/x-www-form-urlencoded; boundary=BOUNDARY\r
 X-Test: value\r
 ")))
 

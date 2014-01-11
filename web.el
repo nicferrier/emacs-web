@@ -491,11 +491,9 @@ response before calling CALLBACK with all the data as a string."
                       ((equal (url-type parsed-url) "https") 'tls)))))
     ;; We must use this coding system or the web dies
     (set-process-coding-system con 'raw-text-unix 'raw-text-unix)
-    (set-process-sentinel
-     con
-     (lambda (con evt)
-       ;;(message "the logging is set to [%s] %s" evt logging)
-       (web/http-post-sentinel-with-logging con evt logging)))
+    (set-process-sentinel con (lambda (con evt)
+                                (web/http-post-sentinel-with-logging
+                                 con evt logging)))
     (set-process-filter
      con
      (lambda (con data)
@@ -658,10 +656,10 @@ affecting the resulting lisp structure."
                  (funcall expectation-failure-callback
                           http-data httpcon header)))))
          (funcall callback lisp-data httpcon header)))
-     :url url
-     :data data
-     :extra-headers headers
-     :logging logging)))
+      :url url
+      :data data
+      :extra-headers headers
+      :logging logging)))
 
 (defvar web-get-history-list nil
   "History for `web-get' interactive forms.")

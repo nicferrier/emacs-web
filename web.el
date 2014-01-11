@@ -302,11 +302,10 @@ Returns a string of the multipart body propertized with
                    (lambda (kv)
                      (let ((name (car kv))
                            (value (cdr kv)))
-                       (format
-                        "--%s\r
+                       (format "--%s\r
 content-disposition: form-data; name=\"%s\"\r\n\r\n%s"
                         boundary name value)))
-                   (-filter (lambda (kv) (not (is-file kv))) data) "\n"))
+                   (-filter (lambda (kv) (not (is-file kv))) data) "\r\n"))
            (files (mapconcat  ; then the files ...
                    (lambda (kv)
                      (let* ((name (car kv))

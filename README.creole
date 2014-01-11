@@ -110,17 +110,18 @@ mappings:
 You can also upload files with web:
 
 {{{
-(defun web-file-upload-test ()
-  (let ((myfile (get-buffer-create "my-file.txt")))
-    (with-current-buffer myfile 
-       (insert "hello!!!!")
-       (write-file "my-file.txt"))
-    (web-http-post
-     (lambda (con hdr data) (message "the file was uploaded!"))
-     :url "http://localhost:9020"
-     :data `(("my-file" . ,myfile))
-     :mime-type web-multipart-mimetype
-     :logging nil)))
+;; -*- lexical-binding: t -*-
+(require 'web)
+
+(let ((myfile (get-buffer-create "my-file.txt")))
+  (with-current-buffer myfile 
+     (insert "hello!!!!")
+     (write-file "my-file.txt"))
+  (web-http-post
+   (lambda (con hdr data) (message "the file was uploaded!"))
+   :url "http://localhost:9020"
+   :data `(("my-file" . ,myfile))
+   :mime-type web-multipart-mimetype))
 }}}
 
 The request MIME type has to be set to {{{web-multipart-mimetype}}}

@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 3 Aug 2012
-;; Version: 0.3.8
+;; Version: 0.4.1
 ;; Url: http://github.com/nicferrier/emacs-web
 ;; Keywords: lisp, http, hypermedia
 
@@ -47,6 +47,7 @@
 (require 'json)
 (require 'browse-url)
 (require 'dash)
+(require 'time-stamp)
 
 (defconst web/request-mimetype
   'application/x-www-form-urlencoded
@@ -203,6 +204,10 @@ by collecting it and then batching it to the CALLBACK."
                   (when part-data
                     (web/http-post-filter
                      con part-data callback mode)))))
+          ;; FIXME - We have the header - we could check for cookie header here
+          ;;
+          ;; or indeed for the redirect.
+          ;;
           ;; We have the header, read the body and call callback
           (cond
             ((equal "chunked" (gethash 'transfer-encoding header))
@@ -289,44 +294,47 @@ Keys may be symbols or strings."
   "Make a boundary marker."
   (sha1 (format "%s%s" (random) (time-stamp-string))))
 
+(defun web/is-file (kv)
+  (let ((b (cdr kv)))
+    (and (bufferp b) (buffer-file-name b) b)))
+
 (defun web-to-multipart (data)
   "Convert DATA, an ALIST or Hashtable, into a Multipart body.
 
 Returns a string of the multipart body propertized with
 `:boundary' with a value of the boundary string."
-  (noflet ((is-file (kv)
-             (let ((b (cdr kv)))
-               (and (bufferp b) (buffer-file-name b) b))))
-    (let* ((boundary (web/to-multipart-boundary))
-           (parts (mapconcat  ; first the params ...
-                   (lambda (kv)
-                     (let ((name (car kv))
-                           (value (cdr kv)))
-                       (format "--%s\r
-content-disposition: form-data; name=\"%s\"\r\n\r\n%s"
-                        boundary name value)))
-                   (-filter (lambda (kv) (not (is-file kv))) data) "\r\n"))
-           (files (mapconcat  ; then the files ...
-                   (lambda (kv)
-                     (let* ((name (car kv))
-                            (buffer (cdr kv))
-                            (filename (buffer-file-name buffer))
-                            (mime-enc (or
-                                       (mm-default-file-encoding filename)
-                                       "text/plain")))
-                       (format "--%s\r
-content-disposition: form-data; name=\"%s\"; filename=\"%s\"\r
-Content-type: %s\r\n\r\n%s"
-                        boundary name (file-name-base filename) mime-enc
-                        ;; FIXME - We should base64 the content when appropriate
-                        (with-current-buffer buffer (buffer-string)))))
-                   (-filter 'is-file data) "\r\n")))
-      (propertize
-       (format "%s%s--%s--\r\n" 
-               (if (and parts (not (equal parts ""))) (concat parts "\r\n") "")
-               (if (and files (not (equal files ""))) (concat files "\r\n") "")
-               boundary)
-       :boundary boundary))))
+  (let* ((boundary (web/to-multipart-boundary))
+         (parts (mapconcat  ; first the params ...
+                 (lambda (kv)
+                   (let ((name (car kv))
+                         (value (cdr kv)))
+                     (format "--%s\r
+Content-Disposition: form-data; name=\"%s\"\r\n\r\n%s"
+                             boundary name value)))
+                 (-filter (lambda (kv) (not (web/is-file kv))) data) "\r\n"))
+         (files (mapconcat  ; then the files ...
+                 (lambda (kv)
+                   (let* ((name (car kv))
+                          (buffer (cdr kv))
+                          (filename (buffer-file-name buffer))
+                          (mime-enc (or
+                                     (mm-default-file-encoding filename)
+                                     "text/plain")))
+                     (format "--%s\r
+Content-Transfer-Encoding: BASE64\r
+Content-Disposition: form-data; name=\"%s\"; filename=\"%s\"\r
+Content-Type: %s\r\n\r\n%s"
+                             boundary name (file-name-nondirectory filename) mime-enc
+                             ;; FIXME - We should base64 the content when appropriate
+                             (base64-encode-string
+                              (with-current-buffer buffer (buffer-string))))))
+                 (-filter 'web/is-file data) "\r\n")))
+    (propertize
+     (format "%s%s--%s--\r\n" 
+             (if (and parts (not (equal parts ""))) (concat parts "\r\n") "")
+             (if (and files (not (equal files ""))) (concat files "\r\n") "")
+             boundary)
+     :boundary boundary)))
 
 (defvar web-log-info nil
   "Whether to log info messages, specifically from the sentinel.")
@@ -606,6 +614,7 @@ to `t'."
 (defun* web-json-post (callback
                        &key
                        url data headers
+                       (mime-type web/request-mimetype)
                        (logging t)
                        (json-array-type json-array-type)
                        (json-object-type json-object-type)
@@ -632,7 +641,8 @@ so the function may be defined like this:
 HEADERS may be specified, these are treated as extra-headers to
 be sent with the request.
 
-The DATA is sent as `application/x-www-form-urlencoded'.
+The DATA is sent as `application/x-www-form-urlencoded' by
+default, MIME-TYPE can change that.
 
 JSON-ARRAY-TYPE, JSON-OBJECT-TYPE and JSON-KEY-TYPE, if present,
 are used to let bind the `json-read' variables of the same name
@@ -658,6 +668,7 @@ affecting the resulting lisp structure."
          (funcall callback lisp-data httpcon header)))
       :url url
       :data data
+      :mime-type mime-type
       :extra-headers headers
       :logging logging)))
 

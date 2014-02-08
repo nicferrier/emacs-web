@@ -134,6 +134,16 @@ right //content-type// to send the file as.
 Currently no extra encoding is done so binary files probably can't be
 sent.
 
+== Most wanted ==
+
+I'd really like web to not have to take a callback there and then but
+to be able to return some sort of future. The alteration would allow
+things like this:
+
+{{{
+(web-json-post :future :url "http://marmalade-repo.org/login")
+}}}
+
 == Installing ==
 
 I keep the {{{web}}} package on [[http://marmalade-repo.org]] but if

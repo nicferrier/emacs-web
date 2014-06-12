@@ -5,9 +5,10 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 3 Aug 2012
-;; Version: 0.4.1
+;; Version: 0.4.2
 ;; Url: http://github.com/nicferrier/emacs-web
 ;; Keywords: lisp, http, hypermedia
+;; Package-requires: ((dash "2.3.0"))
 
 ;; This file is NOT part of GNU Emacs.
 

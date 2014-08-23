@@ -8,7 +8,7 @@
 ;; Version: 0.4.3
 ;; Url: http://github.com/nicferrier/emacs-web
 ;; Keywords: lisp, http, hypermedia
-;; Package-requires: ((dash "2.3.0"))
+;; Package-requires: ((dash "2.3.0")(s "1.5.0"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -50,6 +50,8 @@
 (require 'browse-url)
 (require 'dash)
 (require 'time-stamp)
+(require 'rx)
+(require 's)
 
 (defconst web/request-mimetype
   'application/x-www-form-urlencoded
@@ -157,6 +159,45 @@ CON is used to store state with the process property
     (delete-process proc)
     (kill-buffer buf)))
 
+
+(defconst web-cookie-jar-file
+  (expand-file-name "web-cookies" user-emacs-directory)
+  "The location of the cookie jar file.
+
+Override this with dynamic scope if you need to use a specific
+file.")
+
+(defun web/cookie-handler (con hdr data)
+  "Maintains a cookie jar.
+
+Cookies are written to file \"web-cookie-jar-file\" in a JSON
+format but prefixed by the url that caused the cookie to be set."
+  (save-match-data
+    (let ((cookie-hdr (gethash 'set-cookie hdr)))
+      (when (string-match "\\([^=]+\\)=\\(.*\\)" cookie-hdr)
+        (let* ((name (match-string 1 cookie-hdr))
+               (cookie-str (match-string 2 cookie-hdr))
+               (parts (s-split ";" cookie-str))
+               (value (car parts))
+               (args (--keep (s-split "=" (s-trim it) t) (cdr parts))))
+          (condition-case err
+              (when web-cookie-jar-file
+                (with-current-buffer (find-file-noselect web-cookie-jar-file)
+                  (goto-char (point-min))
+                  (let ((url (process-get con :web-url))
+                        (json (json-encode `(,name ,value ,args))))
+                    (save-match-data
+                      (if (re-search-forward
+                           (rx-to-string `(and bol ,url " " (group-n 1 (* anything))))
+                           nil t)
+                          (replace-match json nil t nil 1)
+                          (goto-char (point-max))
+                          (insert url " " json "\n"))))
+                  (write-file (buffer-file-name))))
+            (error (message
+                    "web/cookie-handler: '%s' writing cookies to '%s'"
+                    err web-cookie-jar-file))))))))
+
 (defun web/chunked-filter (callback con mode header data)
   "Filter for the client when we're doing chunking."
   (cond
@@ -234,9 +275,9 @@ by collecting it and then batching it to the CALLBACK."
                   (when part-data
                     (web/http-post-filter
                      con part-data callback mode)))))
-          ;; FIXME - We have the header - we could check for cookie header here
-          ;;
-          ;; or indeed for the redirect.
+          ;; Do cookie handling
+          (web/cookie-handler con hdr data)
+          ;; FIXME - We have the header - we could check redirect.
           ;;
           ;; We have the header, read the body and call callback
           (cond
@@ -461,8 +502,15 @@ PORT is 80 by default.  Even if SECURE it `t'.  If you manually
 specify SECURE you should manually specify PORT to be 443.  Using
 URL negates the need for that, an SSL URL will work correctly.
 
+The URL connected to (whether specified by URL or by the HOST and
+PORT) is recorded on the resulting connection as the process
+property `:web-url'.
+
 EXTRA-HEADERS is an alist or a hash-table of extra headers to
 send to the server.
+
+The full set of headers sent to the server is recorded on the
+connection with the process property `:web-headers'.
 
 DATA is of MIME-TYPE.  We try to interpret DATA and MIME-TYPE
 usefully:
@@ -473,6 +521,9 @@ body.
 
 If MIME-TYPE is `multipart/form-data' then `web-to-multipart' is
 called to get a POST body.
+
+Any data sent to the server is recorded on the connection with
+the process property `:web-sent'.
 
 When the request comes back the CALLBACK is called.  CALLBACK is
 always passed 3 arguments: the HTTP connection which is a process
@@ -541,6 +592,10 @@ response before calling CALLBACK with all the data as a string."
            method path host
            headers
            (if to-send to-send ""))))
+      ;; Set some data on the connection process so users will be able to find data
+      (process-put con :web-url (format "http://%s" dest))
+      (process-put con :web-headers headers)
+      (process-put con :web-sent to-send)
       (when logging (web/log submission))
       (process-send-string con submission))
     con))

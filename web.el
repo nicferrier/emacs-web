@@ -582,7 +582,9 @@ response before calling CALLBACK with all the data as a string."
                     ('multipart/form-data
                      (web-to-multipart data))
                     ('application/x-www-form-urlencoded
-                     (web-to-query-string data))))
+                     (web-to-query-string data))
+                    ;; By default just have the data
+                    (t data)))
          (headers (or (web/header-string
                        method extra-headers mime-type to-send)
                       ""))

@@ -167,7 +167,16 @@ CON is used to store state with the process property
 Override this with dynamic scope if you need to use a specific
 file.")
 
-(defun web/cookie-handler (con hdr data)
+(defun web/cookie-split (cookie-header)
+  (when (string-match "\\([^=]+\\)=\\(.*\\)" cookie-header)
+    (let* ((name (match-string 1 cookie-header))
+           (cookie-str (match-string 2 cookie-header))
+           (parts (s-split ";" cookie-str))
+           (value (car parts))
+           (args (--keep (s-split "=" (s-trim it) t) (cdr parts))))
+      (list name value args))))
+
+(defun web/cookie-handler (con hdr)
   "Maintains a cookie jar.
 
 Cookies are written to file \"web-cookie-jar-file\" in a JSON
@@ -273,13 +282,9 @@ by collecting it and then batching it to the CALLBACK."
                   (process-put con :http-header hdr)
                   ;; If we have more data call ourselves to process it
                   (when part-data
-                    (web/http-post-filter
-                     con part-data callback mode)))))
-          ;; Do cookie handling
-          (web/cookie-handler con hdr data)
-          ;; FIXME - We have the header - we could check redirect.
-          ;;
-          ;; We have the header, read the body and call callback
+                    (web/http-post-filter con part-data callback mode)))))
+          ;; Else we have the header, read the body and call callback
+          ;; FIXME - we could do cookie handling here... and auto redirect 
           (cond
             ((equal "chunked" (gethash 'transfer-encoding header))
              (web/chunked-decode-stream

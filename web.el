@@ -60,9 +60,7 @@
 ;; for private functions.
 
 
-(eval-when-compile
-  (require 'cl))
-
+(require 'cl-lib)
 (require 'url-parse)
 (require 'json)
 (require 'browse-url)
@@ -105,7 +103,7 @@ which are stored as symbols the same as the normal header keys."
       (puthash 'status-string
                (or (match-string 4 status-line) "")
                header-hash))
-    (loop for line in (cdr header-lines)
+    (cl-loop for line in (cdr header-lines)
        if (string-match
            "^\\([A-Za-z0-9.-]+\\):[ ]*\\(.*\\)"
            line)
@@ -445,7 +443,7 @@ Content-Type: %s\r\n\r\n%s"
 
 (defun web/header-list (headers)
   "Convert HEADERS (hash-table or alist) into a header list."
-  (labels
+  (cl-labels
       ((hdr (key val)
          (format "%s: %s\r\n" key val)))
     (cond
@@ -487,7 +485,7 @@ set on the Content-Type header."
       (push
        (format "Content-length: %d\r\n" (length to-send))
        http-hdrs))
-    (loop for hdr in http-hdrs if hdr concat hdr)))
+    (cl-loop for hdr in http-hdrs if hdr concat hdr)))
 
 (defun web/log (log)
   (when log
@@ -499,19 +497,19 @@ set on the Content-Type header."
         (insert "\n")))))
 
 ;;;###autoload
-(defun* web-http-call (method
-                       callback
-                       &key
-                       url
-                       (host "localhost")
-                       (port 80)
-                       secure
-                       (path "/")
-                       extra-headers
-                       data
-                       (mime-type web/request-mimetype)
-                       (mode 'batch)
-                       logging)
+(cl-defun web-http-call (method
+                         callback
+                         &key
+                         url
+                         (host "localhost")
+                         (port 80)
+                         secure
+                         (path "/")
+                         extra-headers
+                         data
+                         (mime-type web/request-mimetype)
+                         (mode 'batch)
+                         logging)
   "Make an HTTP method to the URL or the HOST, PORT, PATH and send DATA.
 
 If URL is specified then it takes precedence over SECURE, HOST,
@@ -626,7 +624,7 @@ response before calling CALLBACK with all the data as a string."
     con))
 
 ;;;###autoload
-(defun* web-http-get (callback
+(cl-defun web-http-get (callback
                       &key
                       url
                       (host "localhost")
@@ -654,7 +652,7 @@ to `t'."
    :logging logging))
 
 ;;;###autoload
-(defun* web-http-post (callback
+(cl-defun web-http-post (callback
                        &key
                        url
                        (host "localhost")
@@ -698,25 +696,25 @@ to `t'."
   (error "web-json failed to read %S as json with %s and %s"
          data http-con headers))
 
-(defun* web/json-parse (json-candidate-data
-                       &key
-                       (json-array-type json-array-type)
-                       (json-object-type json-object-type)
-                       (json-key-type json-key-type))
+(cl-defun web/json-parse (json-candidate-data
+                          &key
+                          (json-array-type json-array-type)
+                          (json-object-type json-object-type)
+                          (json-key-type json-key-type))
   "Parse DATA as JSON and return the result."
   (json-read-from-string json-candidate-data))
 
 ;;;###autoload
-(defun* web-json-post (callback
-                       &key
-                       url data headers
-                       (mime-type web/request-mimetype)
-                       (logging t)
-                       (json-array-type json-array-type)
-                       (json-object-type json-object-type)
-                       (json-key-type json-key-type)
-                       (expectation-failure-callback
-                        'web-json-default-expectation-failure))
+(cl-defun web-json-post (callback
+                         &key
+                         url data headers
+                         (mime-type web/request-mimetype)
+                         (logging t)
+                         (json-array-type json-array-type)
+                         (json-object-type json-object-type)
+                         (json-key-type json-key-type)
+                         (expectation-failure-callback
+                          'web-json-default-expectation-failure))
   "POST DATA to URL expecting a JSON response sent to CALLBACK.
 
 See `web-json-expected-mimetypes-list' for the list of Mime Types

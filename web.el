@@ -59,7 +59,8 @@
 ;;
 ;; for private functions.
 
-
+(eval-when-compile
+  (require 'cl))
 (require 'cl-lib)
 (require 'url-parse)
 (require 'json)

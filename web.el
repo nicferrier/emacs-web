@@ -5,7 +5,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 3 Aug 2012
-;; Version: 0.5.1
+;; Version: 0.5.2
 ;; Url: http://github.com/nicferrier/emacs-web
 ;; Keywords: lisp, http, hypermedia
 ;; Package-requires: ((dash "2.9.0")(s "1.5.0"))
@@ -405,7 +405,10 @@ Content-Type: %s\r\n\r\n%s"
                              boundary name (file-name-nondirectory filename) mime-enc
                              ;; FIXME - We should base64 the content when appropriate
                              (base64-encode-string
-                              (with-current-buffer buffer (buffer-string))))))
+                              (apply
+                               'encode-coding-string
+                               (with-current-buffer buffer
+                                 (list (buffer-string) buffer-file-coding-system)))))))
                  (-filter 'web/is-file data) "\r\n")))
     (propertize
      (format "%s%s--%s--\r\n" 
